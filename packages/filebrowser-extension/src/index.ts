@@ -688,29 +688,6 @@ function addCommands(
     mnemonic: 0
   });
 
-  commands.addCommand(CommandIDs.openBrowserTab, {
-    execute: () => {
-      const widget = tracker.currentWidget;
-
-      if (!widget) {
-        return;
-      }
-
-      return Promise.all(
-        toArray(
-          map(widget.selectedItems(), item => {
-            return commands.execute('docmanager:open-browser-tab', {
-              path: item.path
-            });
-          })
-        )
-      );
-    },
-    icon: addIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Open in New Browser Tab'),
-    mnemonic: 0
-  });
-
   commands.addCommand(CommandIDs.copyDownloadLink, {
     execute: () => {
       const widget = tracker.currentWidget;
