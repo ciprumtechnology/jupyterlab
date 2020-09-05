@@ -5,7 +5,6 @@ import { IDisplayState, ISearchProvider, IFiltersType } from './interfaces';
 import { createSearchOverlay } from './searchoverlay';
 
 import { MainAreaWidget } from '@jupyterlab/apputils';
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 import { IDisposable } from '@lumino/disposable';
 import { ISignal, Signal } from '@lumino/signaling';
 import { Widget } from '@lumino/widgets';
@@ -14,12 +13,7 @@ import { Widget } from '@lumino/widgets';
  * Represents a search on a single widget.
  */
 export class SearchInstance implements IDisposable {
-  constructor(
-    widget: Widget,
-    searchProvider: ISearchProvider,
-    translator?: ITranslator
-  ) {
-    this.translator = translator || nullTranslator;
+  constructor(widget: Widget, searchProvider: ISearchProvider) {
     this._widget = widget;
     this._activeProvider = searchProvider;
 
@@ -38,8 +32,7 @@ export class SearchInstance implements IDisposable {
       onReplaceAll: this._replaceAll.bind(this),
       onEndSearch: this.dispose.bind(this),
       isReadOnly: this._activeProvider.isReadOnly,
-      hasOutputs: this._activeProvider.hasOutputs || false,
-      translator: this.translator
+      hasOutputs: this._activeProvider.hasOutputs || false
     });
 
     this._widget.disposed.connect(() => {
@@ -222,7 +215,6 @@ export class SearchInstance implements IDisposable {
     filtersOpen: false
   };
 
-  protected translator: ITranslator;
   private _displayUpdateSignal = new Signal<this, IDisplayState>(this);
   private _activeProvider: ISearchProvider;
   private _searchWidget: Widget;

@@ -2,10 +2,8 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { PageConfig, URLExt } from '@jupyterlab/coreutils';
-(window as any).__webpack_public_path__ = URLExt.join(
-  PageConfig.getBaseUrl(),
-  'example/'
-);
+// @ts-ignore
+__webpack_public_path__ = URLExt.join(PageConfig.getBaseUrl(), 'example/');
 
 import '@jupyterlab/application/style/index.css';
 import '@jupyterlab/console/style/index.css';
@@ -27,18 +25,18 @@ import {
   standardRendererFactories as initialFactories
 } from '@jupyterlab/rendermime';
 
-const TITLE = 'Console';
+let TITLE = 'Console';
 
 function main(): void {
-  console.debug('in main');
+  console.log('in main');
   let path = '';
-  const query: { [key: string]: string } = Object.create(null);
+  let query: { [key: string]: string } = Object.create(null);
 
   window.location.search
     .substr(1)
     .split('&')
     .forEach(item => {
-      const pair = item.split('=');
+      let pair = item.split('=');
       if (pair[0]) {
         query[pair[0]] = pair[1];
       }
@@ -48,7 +46,7 @@ function main(): void {
     path = query['path'];
   }
 
-  const manager = new ServiceManager();
+  let manager = new ServiceManager();
   void manager.ready.then(() => {
     startApp(path, manager);
   });
@@ -58,20 +56,20 @@ function main(): void {
  * Start the application.
  */
 function startApp(path: string, manager: ServiceManager.IManager) {
-  console.debug('starting app');
+  console.log('starting app');
   // Initialize the command registry with the key bindings.
-  const commands = new CommandRegistry();
+  let commands = new CommandRegistry();
 
   // Setup the keydown listener for the document.
   document.addEventListener('keydown', event => {
     commands.processKeydownEvent(event);
   });
 
-  const rendermime = new RenderMimeRegistry({ initialFactories });
+  let rendermime = new RenderMimeRegistry({ initialFactories });
 
-  const editorFactory = editorServices.factoryService.newInlineEditor;
-  const contentFactory = new ConsolePanel.ContentFactory({ editorFactory });
-  const consolePanel = new ConsolePanel({
+  let editorFactory = editorServices.factoryService.newInlineEditor;
+  let contentFactory = new ConsolePanel.ContentFactory({ editorFactory });
+  let consolePanel = new ConsolePanel({
     rendermime,
     manager,
     path,
@@ -80,9 +78,9 @@ function startApp(path: string, manager: ServiceManager.IManager) {
   });
   consolePanel.title.label = TITLE;
 
-  const palette = new CommandPalette({ commands });
+  let palette = new CommandPalette({ commands });
 
-  const panel = new SplitPanel();
+  let panel = new SplitPanel();
   panel.id = 'main';
   panel.orientation = 'horizontal';
   panel.spacing = 0;
@@ -99,8 +97,8 @@ function startApp(path: string, manager: ServiceManager.IManager) {
     panel.update();
   });
 
-  const selector = '.jp-ConsolePanel';
-  const category = 'Console';
+  let selector = '.jp-ConsolePanel';
+  let category = 'Console';
   let command: string;
 
   // Add the commands.
@@ -143,7 +141,7 @@ function startApp(path: string, manager: ServiceManager.IManager) {
   palette.addItem({ command, category });
   commands.addKeyBinding({ command, selector, keys: ['Ctrl Enter'] });
 
-  console.debug('Example started!');
+  console.log('Example started!');
 }
 
 window.addEventListener('load', main);

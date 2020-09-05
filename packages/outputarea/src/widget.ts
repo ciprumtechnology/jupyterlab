@@ -1,8 +1,6 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import ResizeObserver from 'resize-observer-polyfill';
-
 import {
   JSONObject,
   PromiseDelegate,
@@ -82,7 +80,7 @@ const STDIN_PROMPT_CLASS = 'jp-Stdin-prompt';
  */
 const STDIN_INPUT_CLASS = 'jp-Stdin-input';
 
-/** ****************************************************************************
+/******************************************************************************
  * OutputArea
  ******************************************************************************/
 
@@ -101,14 +99,14 @@ export class OutputArea extends Widget {
    */
   constructor(options: OutputArea.IOptions) {
     super();
-    const model = (this.model = options.model);
+    let model = (this.model = options.model);
     this.addClass(OUTPUT_AREA_CLASS);
     this.rendermime = options.rendermime;
     this.contentFactory =
       options.contentFactory || OutputArea.defaultContentFactory;
     this.layout = new PanelLayout();
     for (let i = 0; i < model.length; i++) {
-      const output = model.get(i);
+      let output = model.get(i);
       this._insertOutput(i, output);
     }
     model.changed.connect(this.onModelChanged, this);
@@ -234,7 +232,7 @@ export class OutputArea extends Widget {
               i < args.oldValues.length && startIndex < this.widgets.length;
               ++i
             ) {
-              const widget = this.widgets[startIndex];
+              let widget = this.widgets[startIndex];
               widget.parent = null;
               widget.dispose();
             }
@@ -303,9 +301,9 @@ export class OutputArea extends Widget {
     }
 
     // Remove all of our widgets.
-    const length = this.widgets.length;
+    let length = this.widgets.length;
     for (let i = 0; i < length; i++) {
-      const widget = this.widgets[0];
+      let widget = this.widgets[0];
       widget.parent = null;
       widget.dispose();
     }
@@ -323,7 +321,7 @@ export class OutputArea extends Widget {
     // quickly changing height can make the page jitter.
     // We introduce a small delay in the minimum height
     // to prevent this jitter.
-    const rect = this.node.getBoundingClientRect();
+    let rect = this.node.getBoundingClientRect();
     this.node.style.minHeight = `${rect.height}px`;
     if (this._minHeightTimeout) {
       window.clearTimeout(this._minHeightTimeout);
@@ -344,27 +342,23 @@ export class OutputArea extends Widget {
     future: Kernel.IShellFuture
   ): void {
     // Add an output widget to the end.
-    const factory = this.contentFactory;
-    const stdinPrompt = msg.content.prompt;
-    const password = msg.content.password;
+    let factory = this.contentFactory;
+    let stdinPrompt = msg.content.prompt;
+    let password = msg.content.password;
 
-    const panel = new Panel();
+    let panel = new Panel();
     panel.addClass(OUTPUT_AREA_ITEM_CLASS);
     panel.addClass(OUTPUT_AREA_STDIN_ITEM_CLASS);
 
-    const prompt = factory.createOutputPrompt();
+    let prompt = factory.createOutputPrompt();
     prompt.addClass(OUTPUT_AREA_PROMPT_CLASS);
     panel.addWidget(prompt);
 
-    const input = factory.createStdin({
-      prompt: stdinPrompt,
-      password,
-      future
-    });
+    let input = factory.createStdin({ prompt: stdinPrompt, password, future });
     input.addClass(OUTPUT_AREA_OUTPUT_CLASS);
     panel.addWidget(input);
 
-    const layout = this.layout as PanelLayout;
+    let layout = this.layout as PanelLayout;
     layout.addWidget(panel);
 
     /**
@@ -386,15 +380,15 @@ export class OutputArea extends Widget {
    * Update an output in the layout in place.
    */
   private _setOutput(index: number, model: IOutputModel): void {
-    const layout = this.layout as PanelLayout;
-    const panel = layout.widgets[index] as Panel;
-    const renderer = (panel.widgets
+    let layout = this.layout as PanelLayout;
+    let panel = layout.widgets[index] as Panel;
+    let renderer = (panel.widgets
       ? panel.widgets[1]
       : panel) as IRenderMime.IRenderer;
     // Check whether it is safe to reuse renderer:
     // - Preferred mime type has not changed
     // - Isolation has not changed
-    const mimeType = this.rendermime.preferredMimeType(
+    let mimeType = this.rendermime.preferredMimeType(
       model.data,
       model.trusted ? 'any' : 'ensure'
     );
@@ -421,7 +415,7 @@ export class OutputArea extends Widget {
     } else {
       output = new Widget();
     }
-    const layout = this.layout as PanelLayout;
+    let layout = this.layout as PanelLayout;
     layout.insertWidget(index, output);
   }
 
@@ -432,17 +426,17 @@ export class OutputArea extends Widget {
    * #### Notes
    */
   protected createOutputItem(model: IOutputModel): Widget | null {
-    const output = this.createRenderedMimetype(model);
+    let output = this.createRenderedMimetype(model);
 
     if (!output) {
       return null;
     }
 
-    const panel = new Panel();
+    let panel = new Panel();
 
     panel.addClass(OUTPUT_AREA_ITEM_CLASS);
 
-    const prompt = this.contentFactory.createOutputPrompt();
+    let prompt = this.contentFactory.createOutputPrompt();
     prompt.executionCount = model.executionCount;
     prompt.addClass(OUTPUT_AREA_PROMPT_CLASS);
     panel.addWidget(prompt);
@@ -456,7 +450,7 @@ export class OutputArea extends Widget {
    * Render a mimetype
    */
   protected createRenderedMimetype(model: IOutputModel): Widget | null {
-    const mimeType = this.rendermime.preferredMimeType(
+    let mimeType = this.rendermime.preferredMimeType(
       model.data,
       model.trusted ? 'any' : 'ensure'
     );
@@ -465,7 +459,7 @@ export class OutputArea extends Widget {
       return null;
     }
     let output = this.rendermime.createRenderer(mimeType);
-    const isolated = OutputArea.isIsolated(mimeType, model.metadata);
+    let isolated = OutputArea.isIsolated(mimeType, model.metadata);
     if (isolated === true) {
       output = new Private.IsolatedRenderer(output);
     }
@@ -490,11 +484,11 @@ export class OutputArea extends Widget {
    * Handle an iopub message.
    */
   private _onIOPub = (msg: KernelMessage.IIOPubMessage) => {
-    const model = this.model;
-    const msgType = msg.header.msg_type;
+    let model = this.model;
+    let msgType = msg.header.msg_type;
     let output: nbformat.IOutput;
-    const transient = ((msg.content as any).transient || {}) as JSONObject;
-    const displayId = transient['display_id'] as string;
+    let transient = ((msg.content as any).transient || {}) as JSONObject;
+    let displayId = transient['display_id'] as string;
     let targets: number[] | undefined;
 
     switch (msgType) {
@@ -505,16 +499,15 @@ export class OutputArea extends Widget {
         output = { ...msg.content, output_type: msgType };
         model.add(output);
         break;
-      case 'clear_output': {
-        const wait = (msg as KernelMessage.IClearOutputMsg).content.wait;
+      case 'clear_output':
+        let wait = (msg as KernelMessage.IClearOutputMsg).content.wait;
         model.clear(wait);
         break;
-      }
       case 'update_display_data':
         output = { ...msg.content, output_type: 'display_data' };
         targets = this._displayIdMap.get(displayId);
         if (targets) {
-          for (const index of targets) {
+          for (let index of targets) {
             model.set(index, output);
           }
         }
@@ -536,21 +529,21 @@ export class OutputArea extends Widget {
     // API responses that contain a pager are special cased and their type
     // is overridden from 'execute_reply' to 'display_data' in order to
     // render output.
-    const model = this.model;
-    const content = msg.content;
+    let model = this.model;
+    let content = msg.content;
     if (content.status !== 'ok') {
       return;
     }
-    const payload = content && content.payload;
+    let payload = content && content.payload;
     if (!payload || !payload.length) {
       return;
     }
-    const pages = payload.filter((i: any) => (i as any).source === 'page');
+    let pages = payload.filter((i: any) => (i as any).source === 'page');
     if (!pages.length) {
       return;
     }
-    const page = JSON.parse(JSON.stringify(pages[0]));
-    const output: nbformat.IOutput = {
+    let page = JSON.parse(JSON.stringify(pages[0]));
+    let output: nbformat.IOutput = {
       output_type: 'display_data',
       data: (page as any).data as nbformat.IMimeBundle,
       metadata: {}
@@ -581,7 +574,7 @@ export class SimplifiedOutputArea extends OutputArea {
    * Create an output item without a prompt, just the output widgets
    */
   protected createOutputItem(model: IOutputModel): Widget | null {
-    const output = this.createRenderedMimetype(model);
+    let output = this.createRenderedMimetype(model);
     if (output) {
       output.addClass(OUTPUT_AREA_OUTPUT_CLASS);
     }
@@ -631,7 +624,7 @@ export namespace OutputArea {
     ) {
       stopOnError = false;
     }
-    const content: KernelMessage.IExecuteRequestMsg['content'] = {
+    let content: KernelMessage.IExecuteRequestMsg['content'] = {
       code,
       stop_on_error: stopOnError
     };
@@ -640,7 +633,7 @@ export namespace OutputArea {
     if (!kernel) {
       throw new Error('Session has no kernel.');
     }
-    const future = kernel.requestExecute(content, false, metadata);
+    let future = kernel.requestExecute(content, false, metadata);
     output.future = future;
     return future.done;
   }
@@ -649,7 +642,7 @@ export namespace OutputArea {
     mimeType: string,
     metadata: ReadonlyPartialJSONObject
   ): boolean {
-    const mimeMd = metadata[mimeType] as ReadonlyJSONObject | undefined;
+    let mimeMd = metadata[mimeType] as ReadonlyJSONObject | undefined;
     // mime-specific higher priority
     if (mimeMd && mimeMd['isolated'] !== undefined) {
       return !!mimeMd['isolated'];
@@ -702,7 +695,7 @@ export namespace OutputArea {
   export const defaultContentFactory = new ContentFactory();
 }
 
-/** ****************************************************************************
+/******************************************************************************
  * OutputPrompt
  ******************************************************************************/
 
@@ -746,7 +739,7 @@ export class OutputPrompt extends Widget implements IOutputPrompt {
   private _executionCount: nbformat.ExecutionCount = null;
 }
 
-/** ****************************************************************************
+/******************************************************************************
  * Stdin
  ******************************************************************************/
 
@@ -796,7 +789,7 @@ export class Stdin extends Widget implements IStdin {
    * not be called directly by user code.
    */
   handleEvent(event: Event): void {
-    const input = this._input;
+    let input = this._input;
     if (event.type === 'keydown') {
       if ((event as KeyboardEvent).keyCode === 13) {
         // Enter
@@ -864,7 +857,7 @@ export namespace Stdin {
   }
 }
 
-/** ****************************************************************************
+/******************************************************************************
  * Private namespace
  ******************************************************************************/
 
@@ -879,11 +872,11 @@ namespace Private {
     prompt: string,
     password: boolean
   ): HTMLElement {
-    const node = document.createElement('div');
-    const promptNode = document.createElement('pre');
+    let node = document.createElement('div');
+    let promptNode = document.createElement('pre');
     promptNode.className = STDIN_PROMPT_CLASS;
     promptNode.textContent = prompt;
-    const input = document.createElement('input');
+    let input = document.createElement('input');
     input.className = STDIN_INPUT_CLASS;
     if (password) {
       input.type = 'password';
@@ -896,8 +889,7 @@ namespace Private {
   /**
    * A renderer for IFrame data.
    */
-  export class IsolatedRenderer
-    extends Widget
+  export class IsolatedRenderer extends Widget
     implements IRenderMime.IRenderer {
     /**
      * Create an isolated renderer.
@@ -909,9 +901,7 @@ namespace Private {
       this._wrapped = wrapped;
 
       // Once the iframe is loaded, the subarea is dynamically inserted
-      const iframe = this.node as HTMLIFrameElement & {
-        heightChangeObserver: ResizeObserver;
-      };
+      let iframe = this.node as HTMLIFrameElement;
 
       iframe.frameBorder = '0';
       iframe.scrolling = 'auto';
@@ -929,14 +919,10 @@ namespace Private {
 
         iframe.contentDocument!.close();
 
-        const body = iframe.contentDocument!.body;
+        let body = iframe.contentDocument!.body;
 
         // Adjust the iframe height automatically
-        iframe.style.height = `${body.scrollHeight}px`;
-        iframe.heightChangeObserver = new ResizeObserver(() => {
-          iframe.style.height = `${body.scrollHeight}px`;
-        });
-        iframe.heightChangeObserver.observe(body);
+        iframe.style.height = body.scrollHeight + 'px';
       });
     }
 
@@ -953,7 +939,7 @@ namespace Private {
      */
     renderModel(model: IRenderMime.IMimeModel): Promise<void> {
       return this._wrapped.renderModel(model).then(() => {
-        const win = (this.node as HTMLIFrameElement).contentWindow;
+        let win = (this.node as HTMLIFrameElement).contentWindow;
         if (win) {
           win.location.reload();
         }

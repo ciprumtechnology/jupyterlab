@@ -44,7 +44,7 @@ export class RenderedPDF extends Widget implements IRenderMime.IRenderer {
    */
   async renderModel(model: IRenderMime.IMimeModel): Promise<void> {
     await this._ready.promise;
-    const data = model.data[MIME_TYPE] as string | undefined;
+    let data = model.data[MIME_TYPE] as string | undefined;
     if (
       !data ||
       (data.length === this._base64.length && data === this._base64)
@@ -60,7 +60,7 @@ export class RenderedPDF extends Widget implements IRenderMime.IRenderer {
       // upon unhiding a PDF. But triggering a refresh of the URL makes it
       // find it again. No idea what the reason for this is.
       if (Private.IS_FIREFOX) {
-        this._object.data = this._object.data; // eslint-disable-line
+        this._object.data = this._object.data;
       }
       return Promise.resolve(void 0);
     }
@@ -131,6 +131,15 @@ const extensions: IRenderMime.IExtension | IRenderMime.IExtension[] = [
     id: '@jupyterlab/pdf-extension:factory',
     rendererFactory,
     dataType: 'string',
+    fileTypes: [
+      {
+        name: 'PDF',
+        displayName: 'PDF',
+        fileFormat: 'base64',
+        mimeTypes: [MIME_TYPE],
+        extensions: ['.pdf']
+      }
+    ],
     documentWidgetFactoryOptions: {
       name: 'PDF',
       modelName: 'base64',
@@ -174,16 +183,16 @@ namespace Private {
     sliceSize: number = 512
   ): Blob {
     const byteCharacters = atob(b64Data);
-    const byteArrays: Uint8Array[] = [];
+    let byteArrays: Uint8Array[] = [];
 
     for (let offset = 0; offset < byteCharacters.length; offset += sliceSize) {
-      const slice = byteCharacters.slice(offset, offset + sliceSize);
+      let slice = byteCharacters.slice(offset, offset + sliceSize);
 
-      const byteNumbers = new Array(slice.length);
+      let byteNumbers = new Array(slice.length);
       for (let i = 0; i < slice.length; i++) {
         byteNumbers[i] = slice.charCodeAt(i);
       }
-      const byteArray = new Uint8Array(byteNumbers);
+      let byteArray = new Uint8Array(byteNumbers);
       byteArrays.push(byteArray);
     }
 

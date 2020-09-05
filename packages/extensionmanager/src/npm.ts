@@ -241,7 +241,7 @@ export class Searcher {
   ): Promise<ISearchResult> {
     const uri = new URL('/-/v1/search', this.repoUri);
     // Note: Spaces are encoded to '+' signs!
-    const text = `${query} keywords:"jupyterlab-extension"`;
+    let text = `${query} keywords:"jupyterlab-extension"`;
     uri.searchParams.append('text', text);
     uri.searchParams.append('size', pageination.toString());
     uri.searchParams.append('from', (pageination * page).toString());
@@ -297,6 +297,6 @@ export function isJupyterOrg(name: string): boolean {
     parts.length > 1 && // Has a first part
     !!first && // with a finite length
     first[0] === '@' && // corresponding to an org name
-    jupyterOrg.indexOf(first.slice(1)) !== -1 // in the org allowedExtensions.
+    jupyterOrg.indexOf(first.slice(1)) !== -1 // in the org whitelist.
   );
 }

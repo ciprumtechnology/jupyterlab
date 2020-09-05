@@ -1,27 +1,26 @@
-const childProcess = require('child_process');
-const fs = require('fs-extra');
-const glob = require('glob');
-const path = require('path');
-const url = require('url');
+var childProcess = require('child_process');
+var fs = require('fs-extra');
+var glob = require('glob');
+var path = require('path');
+var url = require('url');
 
-const basePath = path.resolve('..');
-const baseUrl = 'https://github.com/jupyterlab/jupyterlab/tree/master/packages';
-const packages = glob.sync(path.join(basePath, 'packages/*'));
+var basePath = path.resolve('..');
+var baseUrl = 'https://github.com/jupyterlab/jupyterlab/tree/master/packages';
+var packages = glob.sync(path.join(basePath, 'packages/*'));
 
 // Begin the graph specification
-let text = ['digraph G {', 'ratio = 0.6;', 'rankdir=LR;'];
+var text = 'digraph G {\n';
+text += 'ratio = 0.6;\n';
+text += 'rankdir=LR;\n';
 
-packages.forEach(function (packagePath) {
+packages.forEach(function(packagePath) {
   // Load the package.json data.
-  const dataPath = path.join(packagePath, 'package.json');
-  let data;
+  var dataPath = path.join(packagePath, 'package.json');
   try {
-    data = require(dataPath);
+    var data = require(dataPath);
   } catch (e) {
     return;
   }
-
-  const name = data.name ?? 'UNKNOWN';
 
   // Don't include private packages.
   if (data.private === true) {
@@ -29,43 +28,42 @@ packages.forEach(function (packagePath) {
   }
 
   // Only include packages in the @jupyterlab namespace.
-  if (!name.startsWith('@jupyterlab')) {
+  if (data.name.indexOf('@jupyterlab') === -1) {
     return;
   }
 
   // In order to cut down on the number of graph nodes,
   // don't include "*-extension" packages.
-  if (name.endsWith('-extension')) {
+  if (data.name.indexOf('-extension') !== -1) {
     return;
   }
 
   // Don't include the metapackage.
-  if (name === '@jupyterlab/metapackage') {
+  if (data.name === '@jupyterlab/metapackage') {
     return;
   }
 
-  const shortName = name.split('/')[1];
-  const urlLink = url.resolve(
-    baseUrl,
-    'packages/' + path.basename(packagePath)
-  );
+  // Construct a URL to the package on GitHub.
+  var Url = url.resolve(baseUrl, 'packages/' + path.basename(packagePath));
 
   // Remove the '@jupyterlab' part of the name.
-  text.push(`"${shortName}" [URL="${urlLink}"];\n`);
+  var name = '"' + data.name.split('/')[1] + '"';
+  text += name + '[URL="' + Url + '"];\n';
 
-  const deps = data.dependencies ?? [];
-  for (let dep in deps) {
-    // Only include JupyterLab dependencies
-    if (dep.startsWith('@jupyterlab')) {
-      text.push(`"${shortName}" -> "${dep.split('/')[1]}";\n`);
+  var deps = data.dependencies || [];
+  for (var dep in deps) {
+    // Don't include non-jupyterlab dependencies.
+    if (dep.indexOf('@jupyterlab') === -1) {
+      continue;
     }
+    dep = '"' + dep.split('/')[1] + '"';
+    text += name + ' -> ' + dep + ';\n';
   }
 });
 
-text.push('}');
-
-fs.writeFileSync('./dependencies.gv', text.join('\n'));
+text += '}\n';
+fs.writeFileSync('./dependencies.gv', text);
 childProcess.execSync(
   'cat dependencies.gv | tred | dot -Tsvg -o dependency-graph.svg'
 );
-fs.unlinkSync('./dependencies.gv');
+fs.unlink('./dependencies.gv');

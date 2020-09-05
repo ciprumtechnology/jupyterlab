@@ -10,8 +10,6 @@ import {
 
 import { PathExt, Time } from '@jupyterlab/coreutils';
 
-import {} from '@jupyterlab/apputils';
-
 import {
   IDocumentManager,
   isValidFileName,
@@ -32,7 +30,6 @@ import {
 import {
   ArrayExt,
   ArrayIterator,
-  StringExt,
   each,
   filter,
   find,
@@ -53,14 +50,7 @@ import { ISignal, Signal } from '@lumino/signaling';
 
 import { Widget } from '@lumino/widgets';
 
-import { VirtualDOM, h } from '@lumino/virtualdom';
-
-import { FilterFileBrowserModel } from './model';
-import {
-  nullTranslator,
-  TranslationBundle,
-  ITranslator
-} from '@jupyterlab/translation';
+import { FileBrowserModel } from './model';
 
 /**
  * The class name added to DirListing widget.
@@ -211,8 +201,6 @@ export class DirListing extends Widget {
       node: (options.renderer || DirListing.defaultRenderer).createNode()
     });
     this.addClass(DIR_LISTING_CLASS);
-    this.translator = options.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this._model = options.model;
     this._model.fileChanged.connect(this._onFileChanged, this);
     this._model.refreshed.connect(this._onModelRefreshed, this);
@@ -223,7 +211,7 @@ export class DirListing extends Widget {
     this._renderer = options.renderer || DirListing.defaultRenderer;
 
     const headerNode = DOMUtils.findElement(this.node, HEADER_CLASS);
-    this._renderer.populateHeaderNode(headerNode, this.translator);
+    this._renderer.populateHeaderNode(headerNode);
     this._manager.activateRequested.connect(this._onActivateRequested, this);
   }
 
@@ -240,7 +228,7 @@ export class DirListing extends Widget {
   /**
    * Get the model used by the listing.
    */
-  get model(): FilterFileBrowserModel {
+  get model(): FileBrowserModel {
     return this._model;
   }
 
@@ -295,7 +283,7 @@ export class DirListing extends Widget {
    * @returns A new iterator over the listing's selected items.
    */
   selectedItems(): IIterator<Contents.IModel> {
-    const items = this._sortedItems;
+    let items = this._sortedItems;
     return filter(items, item => this._selection[item.name]);
   }
 
@@ -354,7 +342,7 @@ export class DirListing extends Widget {
     }
 
     const basePath = this._model.path;
-    const promises: Promise<Contents.IModel>[] = [];
+    let promises: Promise<Contents.IModel>[] = [];
 
     each(this._clipboard, path => {
       if (this._isCut) {
@@ -380,10 +368,7 @@ export class DirListing extends Widget {
         return undefined;
       })
       .catch(error => {
-        void showErrorMessage(
-          this._trans._p('showErrorMessage', 'Paste Error'),
-          error
-        );
+        void showErrorMessage('Paste Error', error);
       });
   }
 
@@ -401,22 +386,13 @@ export class DirListing extends Widget {
 
     const message =
       items.length === 1
-        ? this._trans.__(
-            'Are you sure you want to permanently delete: %1?',
-            items[0].name
-          )
-        : this._trans._n(
-            'Are you sure you want to permanently delete the %1 selected item?',
-            'Are you sure you want to permanently delete the %1 selected items?',
-            items.length
-          );
+        ? `Are you sure you want to permanently delete: ${items[0].name}?`
+        : `Are you sure you want to permanently delete the ${items.length} ` +
+          `files/folders selected?`;
     const result = await showDialog({
-      title: this._trans.__('Delete'),
+      title: 'Delete',
       body: message,
-      buttons: [
-        Dialog.cancelButton({ label: this._trans.__('Cancel') }),
-        Dialog.warnButton({ label: this._trans.__('Delete') })
-      ]
+      buttons: [Dialog.cancelButton(), Dialog.warnButton({ label: 'Delete' })]
     });
 
     if (!this.isDisposed && result.button.accept) {
@@ -431,11 +407,11 @@ export class DirListing extends Widget {
    */
   duplicate(): Promise<void> {
     const basePath = this._model.path;
-    const promises: Promise<Contents.IModel>[] = [];
+    let promises: Promise<Contents.IModel>[] = [];
 
     each(this.selectedItems(), item => {
       if (item.type !== 'directory') {
-        const oldPath = PathExt.join(basePath, item.name);
+        let oldPath = PathExt.join(basePath, item.name);
         promises.push(this._model.manager.copy(oldPath, basePath));
       }
     });
@@ -444,10 +420,7 @@ export class DirListing extends Widget {
         return undefined;
       })
       .catch(error => {
-        void showErrorMessage(
-          this._trans._p('showErrorMessage', 'Duplicate file'),
-          error
-        );
+        void showErrorMessage('Duplicate file', error);
       });
   }
 
@@ -474,7 +447,7 @@ export class DirListing extends Widget {
 
     const promises = toArray(this._model.sessions())
       .filter(session => {
-        const index = ArrayExt.firstIndexOf(paths, session.path);
+        let index = ArrayExt.firstIndexOf(paths, session.path);
         return this._selection[items[index].name];
       })
       .map(session => model.manager.services.sessions.shutdown(session.id));
@@ -484,10 +457,7 @@ export class DirListing extends Widget {
         return undefined;
       })
       .catch(error => {
-        void showErrorMessage(
-          this._trans._p('showErrorMessage', 'Shut down kernel'),
-          error
-        );
+        void showErrorMessage('Shut down kernel', error);
       });
   }
 
@@ -498,11 +468,11 @@ export class DirListing extends Widget {
    */
   selectNext(keepExisting = false): void {
     let index = -1;
-    const selected = Object.keys(this._selection);
-    const items = this._sortedItems;
+    let selected = Object.keys(this._selection);
+    let items = this._sortedItems;
     if (selected.length === 1 || keepExisting) {
       // Select the next item.
-      const name = selected[selected.length - 1];
+      let name = selected[selected.length - 1];
       index = ArrayExt.findFirstIndex(items, value => value.name === name);
       index += 1;
       if (index === this._items.length) {
@@ -513,7 +483,7 @@ export class DirListing extends Widget {
       index = 0;
     } else {
       // Select the last selected item.
-      const name = selected[selected.length - 1];
+      let name = selected[selected.length - 1];
       index = ArrayExt.findFirstIndex(items, value => value.name === name);
     }
     if (index !== -1) {
@@ -529,11 +499,11 @@ export class DirListing extends Widget {
    */
   selectPrevious(keepExisting = false): void {
     let index = -1;
-    const selected = Object.keys(this._selection);
-    const items = this._sortedItems;
+    let selected = Object.keys(this._selection);
+    let items = this._sortedItems;
     if (selected.length === 1 || keepExisting) {
       // Select the previous item.
-      const name = selected[0];
+      let name = selected[0];
       index = ArrayExt.findFirstIndex(items, value => value.name === name);
       index -= 1;
       if (index === -1) {
@@ -544,7 +514,7 @@ export class DirListing extends Widget {
       index = this._items.length - 1;
     } else {
       // Select the first selected item.
-      const name = selected[0];
+      let name = selected[0];
       index = ArrayExt.findFirstIndex(items, value => value.name === name);
     }
     if (index !== -1) {
@@ -558,9 +528,9 @@ export class DirListing extends Widget {
    */
   selectByPrefix(): void {
     const prefix = this._searchPrefix.toLowerCase();
-    const items = this._sortedItems;
+    let items = this._sortedItems;
 
-    const index = ArrayExt.findFirstIndex(items, value => {
+    let index = ArrayExt.findFirstIndex(items, value => {
       return value.name.toLowerCase().substr(0, prefix.length) === prefix;
     });
 
@@ -589,8 +559,8 @@ export class DirListing extends Widget {
    * @returns The model for the selected file.
    */
   modelForClick(event: MouseEvent): Contents.IModel | undefined {
-    const items = this._sortedItems;
-    const index = Private.hitTestNodes(this._items, event);
+    let items = this._sortedItems;
+    let index = Private.hitTestNodes(this._items, event.clientX, event.clientY);
     if (index !== -1) {
       return items[index];
     }
@@ -618,8 +588,8 @@ export class DirListing extends Widget {
     if (this.isDisposed) {
       throw new Error('File browser is disposed.');
     }
-    const items = this._sortedItems;
-    const index = ArrayExt.findFirstIndex(items, value => value.name === name);
+    let items = this._sortedItems;
+    let index = ArrayExt.findFirstIndex(items, value => value.name === name);
     if (index === -1) {
       throw new Error('Item does not exist.');
     }
@@ -696,8 +666,8 @@ export class DirListing extends Widget {
    */
   protected onAfterAttach(msg: Message): void {
     super.onAfterAttach(msg);
-    const node = this.node;
-    const content = DOMUtils.findElement(node, CONTENT_CLASS);
+    let node = this.node;
+    let content = DOMUtils.findElement(node, CONTENT_CLASS);
     node.addEventListener('mousedown', this);
     node.addEventListener('keydown', this);
     node.addEventListener('click', this);
@@ -719,8 +689,8 @@ export class DirListing extends Widget {
    */
   protected onBeforeDetach(msg: Message): void {
     super.onBeforeDetach(msg);
-    const node = this.node;
-    const content = DOMUtils.findElement(node, CONTENT_CLASS);
+    let node = this.node;
+    let content = DOMUtils.findElement(node, CONTENT_CLASS);
     node.removeEventListener('mousedown', this);
     node.removeEventListener('keydown', this);
     node.removeEventListener('click', this);
@@ -757,10 +727,10 @@ export class DirListing extends Widget {
     this._isDirty = false;
 
     // Fetch common variables.
-    const items = this._sortedItems;
-    const nodes = this._items;
-    const content = DOMUtils.findElement(this.node, CONTENT_CLASS);
-    const renderer = this._renderer;
+    let items = this._sortedItems;
+    let nodes = this._items;
+    let content = DOMUtils.findElement(this.node, CONTENT_CLASS);
+    let renderer = this._renderer;
 
     this.removeClass(MULTI_SELECTED_CLASS);
     this.removeClass(SELECTED_CLASS);
@@ -772,7 +742,7 @@ export class DirListing extends Widget {
 
     // Add any missing item nodes.
     while (nodes.length < items.length) {
-      const node = renderer.createItemNode();
+      let node = renderer.createItemNode();
       node.classList.add(ITEM_CLASS);
       nodes.push(node);
       content.appendChild(node);
@@ -787,9 +757,9 @@ export class DirListing extends Widget {
 
     // Add extra classes to item nodes based on widget state.
     items.forEach((item, i) => {
-      const node = nodes[i];
-      const ft = this._manager.registry.getFileTypeForModel(item);
-      renderer.updateItemNode(node, item, ft, this.translator);
+      let node = nodes[i];
+      let ft = this._manager.registry.getFileTypeForModel(item);
+      renderer.updateItemNode(node, item, ft);
       if (this._selection[item.name]) {
         node.classList.add(SELECTED_CLASS);
         if (this._isCut && this._model.path === this._prevPath) {
@@ -805,7 +775,7 @@ export class DirListing extends Widget {
     });
 
     // Handle the selectors on the widget node.
-    const selected = Object.keys(this._selection).length;
+    let selected = Object.keys(this._selection).length;
     if (selected) {
       this.addClass(SELECTED_CLASS);
       if (selected > 1) {
@@ -814,22 +784,19 @@ export class DirListing extends Widget {
     }
 
     // Handle file session statuses.
-    const paths = items.map(item => item.path);
+    let paths = items.map(item => item.path);
     each(this._model.sessions(), session => {
-      const index = ArrayExt.firstIndexOf(paths, session.path);
-      const node = nodes[index];
-      // Node may have been filtered out.
-      if (node) {
-        let name = session.kernel?.name;
-        const specs = this._model.specs;
+      let index = ArrayExt.firstIndexOf(paths, session.path);
+      let node = nodes[index];
+      let name = session.kernel?.name;
+      let specs = this._model.specs;
 
-        node.classList.add(RUNNING_CLASS);
-        if (specs && name) {
-          const spec = specs.kernelspecs[name];
-          name = spec ? spec.display_name : 'unknown'; // FIXME-TRANS: Is this localizable?
-        }
-        node.title = this._trans.__('%1\nKernel: %2', node.title, name);
+      node.classList.add(RUNNING_CLASS);
+      if (specs && name) {
+        const spec = specs.kernelspecs[name];
+        name = spec ? spec.display_name : 'unknown';
       }
+      node.title = `${node.title}\nKernel: ${name}`;
     });
 
     this._prevPath = this._model.path;
@@ -845,11 +812,11 @@ export class DirListing extends Widget {
    * Handle the `'click'` event for the widget.
    */
   private _evtClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
+    let target = event.target as HTMLElement;
 
-    const header = this.headerNode;
+    let header = this.headerNode;
     if (header.contains(target)) {
-      const state = this.renderer.handleHeaderClick(header, event);
+      let state = this.renderer.handleHeaderClick(header, event);
       if (state) {
         this.sort(state);
       }
@@ -884,12 +851,10 @@ export class DirListing extends Widget {
       }
     }
 
-    let index = Private.hitTestNodes(this._items, event);
-
+    let index = Private.hitTestNodes(this._items, event.clientX, event.clientY);
     if (index === -1) {
       return;
     }
-
     this._handleFileSelect(event);
 
     if (event.button !== 0) {
@@ -897,7 +862,7 @@ export class DirListing extends Widget {
     }
 
     // Check for clearing a context menu.
-    const newContext = (IS_MAC && event.ctrlKey) || event.button === 2;
+    let newContext = (IS_MAC && event.ctrlKey) || event.button === 2;
     if (newContext) {
       return;
     }
@@ -920,7 +885,7 @@ export class DirListing extends Widget {
   private _evtMouseup(event: MouseEvent): void {
     // Handle any soft selection from the previous mouse down.
     if (this._softSelection) {
-      const altered = event.metaKey || event.shiftKey || event.ctrlKey;
+      let altered = event.metaKey || event.shiftKey || event.ctrlKey;
       // See if we need to clear the other selection.
       if (!altered && event.button === 0) {
         this.clearSelectedItems();
@@ -952,9 +917,9 @@ export class DirListing extends Widget {
     }
 
     // Check for a drag initialization.
-    const data = this._dragData;
-    const dx = Math.abs(event.clientX - data.pressX);
-    const dy = Math.abs(event.clientY - data.pressY);
+    let data = this._dragData;
+    let dx = Math.abs(event.clientX - data.pressX);
+    let dy = Math.abs(event.clientY - data.pressY);
     if (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) {
       return;
     }
@@ -971,27 +936,18 @@ export class DirListing extends Widget {
       const localPath = this._manager.services.contents.localPath(item.path);
       this._model
         .cd(`/${localPath}`)
-        .catch(error =>
-          showErrorMessage(
-            this._trans._p('showErrorMessage', 'Open directory'),
-            error
-          )
-        );
+        .catch(error => showErrorMessage('Open directory', error));
     } else {
-      const path = item.path;
-      this._manager.openOrReveal(path, 'default', undefined, {
-        maybeNewWorkspace: true
-      });
+      let path = item.path;
+      this._manager.openOrReveal(path);
     }
   }
-
   /**
    * Handle the `'keydown'` event for the widget.
    */
   private _evtKeydown(event: KeyboardEvent): void {
     switch (event.keyCode) {
-      case 13: {
-        // Enter
+      case 13: // Enter
         // Do nothing if any modifier keys are pressed.
         if (event.ctrlKey || event.shiftKey || event.altKey || event.metaKey) {
           return;
@@ -999,18 +955,17 @@ export class DirListing extends Widget {
         event.preventDefault();
         event.stopPropagation();
 
-        const selected = Object.keys(this._selection);
-        const name = selected[0];
-        const items = this._sortedItems;
-        const i = ArrayExt.findFirstIndex(items, value => value.name === name);
+        let selected = Object.keys(this._selection);
+        let name = selected[0];
+        let items = this._sortedItems;
+        let i = ArrayExt.findFirstIndex(items, value => value.name === name);
         if (i === -1) {
           return;
         }
 
-        const item = this._sortedItems[i];
+        let item = this._sortedItems[i];
         this._handleOpen(item);
         break;
-      }
       case 38: // Up arrow
         this.selectPrevious(event.shiftKey);
         event.stopPropagation();
@@ -1064,15 +1019,13 @@ export class DirListing extends Widget {
     this._editNode.blur();
 
     // Find a valid double click target.
-    const target = event.target as HTMLElement;
-    const i = ArrayExt.findFirstIndex(this._items, node =>
-      node.contains(target)
-    );
+    let target = event.target as HTMLElement;
+    let i = ArrayExt.findFirstIndex(this._items, node => node.contains(target));
     if (i === -1) {
       return;
     }
 
-    const item = this._sortedItems[i];
+    let item = this._sortedItems[i];
     this._handleOpen(item);
   }
 
@@ -1080,7 +1033,7 @@ export class DirListing extends Widget {
    * Handle the `drop` event for the widget.
    */
   private _evtNativeDrop(event: DragEvent): void {
-    const files = event.dataTransfer?.files;
+    let files = event.dataTransfer?.files;
     if (!files || files.length === 0) {
       return;
     }
@@ -1095,15 +1048,19 @@ export class DirListing extends Widget {
    */
   private _evtDragEnter(event: IDragEvent): void {
     if (event.mimeData.hasData(CONTENTS_MIME)) {
-      const index = Private.hitTestNodes(this._items, event);
+      let index = Private.hitTestNodes(
+        this._items,
+        event.clientX,
+        event.clientY
+      );
       if (index === -1) {
         return;
       }
-      const item = this._sortedItems[index];
+      let item = this._sortedItems[index];
       if (item.type !== 'directory' || this._selection[item.name]) {
         return;
       }
-      const target = event.target as HTMLElement;
+      let target = event.target as HTMLElement;
       target.classList.add(DROP_TARGET_CLASS);
       event.preventDefault();
       event.stopPropagation();
@@ -1116,7 +1073,7 @@ export class DirListing extends Widget {
   private _evtDragLeave(event: IDragEvent): void {
     event.preventDefault();
     event.stopPropagation();
-    const dropTarget = DOMUtils.findElement(this.node, DROP_TARGET_CLASS);
+    let dropTarget = DOMUtils.findElement(this.node, DROP_TARGET_CLASS);
     if (dropTarget) {
       dropTarget.classList.remove(DROP_TARGET_CLASS);
     }
@@ -1129,11 +1086,11 @@ export class DirListing extends Widget {
     event.preventDefault();
     event.stopPropagation();
     event.dropAction = event.proposedAction;
-    const dropTarget = DOMUtils.findElement(this.node, DROP_TARGET_CLASS);
+    let dropTarget = DOMUtils.findElement(this.node, DROP_TARGET_CLASS);
     if (dropTarget) {
       dropTarget.classList.remove(DROP_TARGET_CLASS);
     }
-    const index = Private.hitTestNodes(this._items, event);
+    let index = Private.hitTestNodes(this._items, event.clientX, event.clientY);
     this._items[index].classList.add(DROP_TARGET_CLASS);
   }
 
@@ -1179,10 +1136,10 @@ export class DirListing extends Widget {
     } else {
       event.dropAction = event.proposedAction;
     }
-    for (const path of paths) {
-      const localPath = manager.services.contents.localPath(path);
-      const name = PathExt.basename(localPath);
-      const newPath = PathExt.join(basePath, name);
+    for (let path of paths) {
+      let localPath = manager.services.contents.localPath(path);
+      let name = PathExt.basename(localPath);
+      let newPath = PathExt.join(basePath, name);
       // Skip files that are not moving.
       if (newPath === path) {
         continue;
@@ -1195,10 +1152,7 @@ export class DirListing extends Widget {
       }
     }
     Promise.all(promises).catch(error => {
-      void showErrorMessage(
-        this._trans._p('showErrorMessage', 'Error while copying/moving files'),
-        error
-      );
+      void showErrorMessage('Error while copying/moving files', error);
     });
   }
 
@@ -1207,8 +1161,8 @@ export class DirListing extends Widget {
    */
   private _startDrag(index: number, clientX: number, clientY: number): void {
     let selectedNames = Object.keys(this._selection);
-    const source = this._items[index];
-    const items = this._sortedItems;
+    let source = this._items[index];
+    let items = this._sortedItems;
     let selectedItems: Contents.IModel[];
     let item: Contents.IModel | undefined;
 
@@ -1218,7 +1172,7 @@ export class DirListing extends Widget {
       selectedNames = [item.name];
       selectedItems = [item];
     } else {
-      const name = selectedNames[0];
+      let name = selectedNames[0];
       item = find(items, value => value.name === name);
       selectedItems = toArray(this.selectedItems());
     }
@@ -1228,11 +1182,10 @@ export class DirListing extends Widget {
     }
 
     // Create the drag image.
-    const ft = this._manager.registry.getFileTypeForModel(item);
-    const dragImage = this.renderer.createDragImage(
+    let ft = this._manager.registry.getFileTypeForModel(item);
+    let dragImage = this.renderer.createDragImage(
       source,
       selectedNames.length,
-      this._trans,
       ft
     );
 
@@ -1243,9 +1196,9 @@ export class DirListing extends Widget {
       supportedActions: 'move',
       proposedAction: 'move'
     });
-    const basePath = this._model.path;
+    let basePath = this._model.path;
 
-    const paths = toArray(
+    let paths = toArray(
       map(selectedNames, name => {
         return PathExt.join(basePath, name);
       })
@@ -1256,7 +1209,7 @@ export class DirListing extends Widget {
     // We thunk the content so we don't try to make a network call
     // when it's not needed. E.g. just moving files around
     // in a filebrowser
-    const services = this.model.manager.services;
+    let services = this.model.manager.services;
     for (const item of selectedItems) {
       this._drag.mimeData.setData(CONTENTS_MIME_RICH, {
         model: item,
@@ -1272,7 +1225,7 @@ export class DirListing extends Widget {
         if (!item) {
           return;
         }
-        const path = item.path;
+        let path = item.path;
         let widget = this._manager.findWidget(path);
         if (!widget) {
           widget = this._manager.open(item.path);
@@ -1316,8 +1269,8 @@ export class DirListing extends Widget {
    */
   private _handleFileSelect(event: MouseEvent): void {
     // Fetch common variables.
-    const items = this._sortedItems;
-    const index = Private.hitTestNodes(this._items, event);
+    let items = this._sortedItems;
+    let index = Private.hitTestNodes(this._items, event.clientX, event.clientY);
 
     clearTimeout(this._selectTimer);
 
@@ -1328,8 +1281,8 @@ export class DirListing extends Widget {
     // Clear any existing soft selection.
     this._softSelection = '';
 
-    const name = items[index].name;
-    const selected = Object.keys(this._selection);
+    let name = items[index].name;
+    let selected = Object.keys(this._selection);
 
     // Handle toggling.
     if ((IS_MAC && event.metaKey) || (!IS_MAC && event.ctrlKey)) {
@@ -1361,13 +1314,13 @@ export class DirListing extends Widget {
    */
   private _handleMultiSelect(selected: string[], index: number): void {
     // Find the "nearest selected".
-    const items = this._sortedItems;
+    let items = this._sortedItems;
     let nearestIndex = -1;
     for (let i = 0; i < this._items.length; i++) {
       if (i === index) {
         continue;
       }
-      const name = items[i].name;
+      let name = items[i].name;
       if (selected.indexOf(name) !== -1) {
         if (nearestIndex === -1) {
           nearestIndex = i;
@@ -1412,10 +1365,7 @@ export class DirListing extends Widget {
     await Promise.all(
       paths.map(path =>
         this._model.manager.deleteFile(path).catch(err => {
-          void showErrorMessage(
-            this._trans._p('showErrorMessage', 'Delete Failed'),
-            err
-          );
+          void showErrorMessage('Delete Failed', err);
         })
       )
     );
@@ -1426,13 +1376,13 @@ export class DirListing extends Widget {
    */
   private _doRename(): Promise<string> {
     this._inRename = true;
-    const items = this._sortedItems;
-    const name = Object.keys(this._selection)[0];
-    const index = ArrayExt.findFirstIndex(items, value => value.name === name);
-    const row = this._items[index];
-    const item = items[index];
-    const nameNode = this.renderer.getNameNode(row);
-    const original = item.name;
+    let items = this._sortedItems;
+    let name = Object.keys(this._selection)[0];
+    let index = ArrayExt.findFirstIndex(items, value => value.name === name);
+    let row = this._items[index];
+    let item = items[index];
+    let nameNode = this.renderer.getNameNode(row);
+    let original = item.name;
     this._editNode.value = original;
     this._selectItem(index, false);
 
@@ -1444,13 +1394,11 @@ export class DirListing extends Widget {
       }
       if (!isValidFileName(newName)) {
         void showErrorMessage(
-          this._trans.__('showErrorMessage', 'Rename Error'),
+          'Rename Error',
           Error(
-            this._trans._p(
-              'showErrorMessage',
-              '"%1" is not a valid name for a file. Names must have nonzero length, and cannot include "/", "\\", or ":"',
-              newName
-            )
+            `"${newName}" is not a valid name for a file. ` +
+              `Names must have nonzero length, ` +
+              `and cannot include "/", "\\", or ":"`
           )
         );
         this._inRename = false;
@@ -1469,10 +1417,7 @@ export class DirListing extends Widget {
       return promise
         .catch(error => {
           if (error !== 'File not renamed') {
-            void showErrorMessage(
-              this._trans._p('showErrorMessage', 'Rename Error'),
-              error
-            );
+            void showErrorMessage('Rename Error', error);
           }
           this._inRename = false;
           return original;
@@ -1497,11 +1442,11 @@ export class DirListing extends Widget {
    */
   private _selectItem(index: number, keepExisting: boolean) {
     // Selected the given row(s)
-    const items = this._sortedItems;
+    let items = this._sortedItems;
     if (!keepExisting) {
       this.clearSelectedItems();
     }
-    const name = items[index].name;
+    let name = items[index].name;
     this._selection[name] = true;
     this.update();
   }
@@ -1511,10 +1456,10 @@ export class DirListing extends Widget {
    */
   private _onModelRefreshed(): void {
     // Update the selection.
-    const existing = Object.keys(this._selection);
+    let existing = Object.keys(this._selection);
     this.clearSelectedItems();
     each(this._model.items(), item => {
-      const name = item.name;
+      let name = item.name;
       if (existing.indexOf(name) !== -1) {
         this._selection[name] = true;
       }
@@ -1541,15 +1486,15 @@ export class DirListing extends Widget {
    * Handle a `fileChanged` signal from the model.
    */
   private _onFileChanged(
-    sender: FilterFileBrowserModel,
+    sender: FileBrowserModel,
     args: Contents.IChangedArgs
   ) {
-    const newValue = args.newValue;
+    let newValue = args.newValue;
     if (!newValue) {
       return;
     }
 
-    const name = newValue.name;
+    let name = newValue.name;
     if (args.type !== 'new' || !name) {
       return;
     }
@@ -1569,19 +1514,17 @@ export class DirListing extends Widget {
    * Handle an `activateRequested` signal from the manager.
    */
   private _onActivateRequested(sender: IDocumentManager, args: string): void {
-    const dirname = PathExt.dirname(args);
+    let dirname = PathExt.dirname(args);
     if (dirname !== this._model.path) {
       return;
     }
-    const basename = PathExt.basename(args);
+    let basename = PathExt.basename(args);
     this.selectItemByName(basename).catch(() => {
       /* Ignore if file does not exist. */
     });
   }
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
-  private _model: FilterFileBrowserModel;
+  private _model: FileBrowserModel;
   private _editNode: HTMLInputElement;
   private _items: HTMLElement[] = [];
   private _sortedItems: Contents.IModel[] = [];
@@ -1621,7 +1564,7 @@ export namespace DirListing {
     /**
      * A file browser model instance.
      */
-    model: FilterFileBrowserModel;
+    model: FileBrowserModel;
 
     /**
      * A renderer for file items.
@@ -1629,11 +1572,6 @@ export namespace DirListing {
      * The default is a shared `Renderer` instance.
      */
     renderer?: IRenderer;
-
-    /**
-     * A language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**
@@ -1684,7 +1622,7 @@ export namespace DirListing {
      *
      * @param node - The header node to populate.
      */
-    populateHeaderNode(node: HTMLElement, translator?: ITranslator): void;
+    populateHeaderNode(node: HTMLElement): void;
 
     /**
      * Handle a header click.
@@ -1716,8 +1654,7 @@ export namespace DirListing {
     updateItemNode(
       node: HTMLElement,
       model: Contents.IModel,
-      fileType?: DocumentRegistry.IFileType,
-      translator?: ITranslator
+      fileType?: DocumentRegistry.IFileType
     ): void;
 
     /**
@@ -1743,7 +1680,6 @@ export namespace DirListing {
     createDragImage(
       node: HTMLElement,
       count: number,
-      trans: TranslationBundle,
       fileType?: DocumentRegistry.IFileType
     ): HTMLElement;
   }
@@ -1756,9 +1692,9 @@ export namespace DirListing {
      * Create the DOM node for a dir listing.
      */
     createNode(): HTMLElement {
-      const node = document.createElement('div');
-      const header = document.createElement('div');
-      const content = document.createElement('ul');
+      let node = document.createElement('div');
+      let header = document.createElement('div');
+      let content = document.createElement('ul');
       content.className = CONTENT_CLASS;
       header.className = HEADER_CLASS;
       node.appendChild(header);
@@ -1772,11 +1708,9 @@ export namespace DirListing {
      *
      * @param node - The header node to populate.
      */
-    populateHeaderNode(node: HTMLElement, translator?: ITranslator): void {
-      translator = translator || nullTranslator;
-      const trans = translator.load('jupyterlab');
-      const name = this._createHeaderItemNode(trans.__('Name'));
-      const modified = this._createHeaderItemNode(trans.__('Last Modified'));
+    populateHeaderNode(node: HTMLElement): void {
+      let name = this._createHeaderItemNode('Name');
+      let modified = this._createHeaderItemNode('Last Modified');
       name.classList.add(NAME_ID_CLASS);
       name.classList.add(SELECTED_CLASS);
       modified.classList.add(MODIFIED_ID_CLASS);
@@ -1801,10 +1735,10 @@ export namespace DirListing {
      * @returns The sort state of the header after the click event.
      */
     handleHeaderClick(node: HTMLElement, event: MouseEvent): ISortState {
-      const name = DOMUtils.findElement(node, NAME_ID_CLASS);
-      const modified = DOMUtils.findElement(node, MODIFIED_ID_CLASS);
-      const state: ISortState = { direction: 'ascending', key: 'name' };
-      const target = event.target as HTMLElement;
+      let name = DOMUtils.findElement(node, NAME_ID_CLASS);
+      let modified = DOMUtils.findElement(node, MODIFIED_ID_CLASS);
+      let state: ISortState = { direction: 'ascending', key: 'name' };
+      let target = event.target as HTMLElement;
       if (name.contains(target)) {
         const modifiedIcon = DOMUtils.findElement(
           modified,
@@ -1867,10 +1801,10 @@ export namespace DirListing {
      * @returns A new DOM node to use as a content item.
      */
     createItemNode(): HTMLElement {
-      const node = document.createElement('li');
-      const icon = document.createElement('span');
-      const text = document.createElement('span');
-      const modified = document.createElement('span');
+      let node = document.createElement('li');
+      let icon = document.createElement('span');
+      let text = document.createElement('span');
+      let modified = document.createElement('span');
       icon.className = ITEM_ICON_CLASS;
       text.className = ITEM_TEXT_CLASS;
       modified.className = ITEM_MODIFIED_CLASS;
@@ -1893,15 +1827,9 @@ export namespace DirListing {
     updateItemNode(
       node: HTMLElement,
       model: Contents.IModel,
-      fileType?: DocumentRegistry.IFileType,
-      translator?: ITranslator
+      fileType: DocumentRegistry.IFileType = DocumentRegistry.defaultTextFileType
     ): void {
-      translator = translator || nullTranslator;
-      fileType =
-        fileType || DocumentRegistry.getDefaultTextFileType(translator);
-      const { icon, iconClass, name } = fileType;
-      translator = translator || nullTranslator;
-      const trans = translator.load('jupyterlab');
+      const { icon, iconClass } = fileType;
 
       const iconContainer = DOMUtils.findElement(node, ITEM_ICON_CLASS);
       const text = DOMUtils.findElement(node, ITEM_TEXT_CLASS);
@@ -1916,50 +1844,36 @@ export namespace DirListing {
         stylesheet: 'listing'
       });
 
-      let hoverText = trans.__('Name: %1', model.name);
-
+      let hoverText = 'Name: ' + model.name;
       // add file size to pop up if its available
       if (model.size !== null && model.size !== undefined) {
-        hoverText += trans.__(
-          '\nSize: %1',
-          Private.formatFileSize(model.size, 1, 1024)
-        );
+        hoverText += '\nSize: ' + Private.formatFileSize(model.size, 1, 1024);
       }
       if (model.path) {
-        const dirname = PathExt.dirname(model.path);
+        let dirname = PathExt.dirname(model.path);
         if (dirname) {
-          hoverText += trans.__('\nPath: %1', dirname.substr(0, 50));
+          hoverText += '\nPath: ' + dirname.substr(0, 50);
           if (dirname.length > 50) {
             hoverText += '...';
           }
         }
       }
       if (model.created) {
-        hoverText += trans.__(
-          '\nCreated: %1',
-          Time.format(new Date(model.created), 'YYYY-MM-DD HH:mm:ss')
-        );
+        hoverText +=
+          '\nCreated: ' +
+          Time.format(new Date(model.created), 'YYYY-MM-DD HH:mm:ss');
       }
       if (model.last_modified) {
-        hoverText += trans.__(
-          '\nModified: %1',
-          Time.format(new Date(model.last_modified), 'YYYY-MM-DD HH:mm:ss')
-        );
+        hoverText +=
+          '\nModified: ' +
+          Time.format(new Date(model.last_modified), 'YYYY-MM-DD HH:mm:ss');
       }
-      hoverText += trans.__('\nWritable: %1', model.writable);
 
       node.title = hoverText;
-      node.setAttribute('data-file-type', name);
-      if (model.name.startsWith('.')) {
-        node.setAttribute('data-is-dot', 'true');
-      } else {
-        node.removeAttribute('data-is-dot');
-      }
+
       // If an item is being edited currently, its text node is unavailable.
-      if (text) {
-        const indices = !model.indices ? [] : model.indices;
-        let highlightedName = StringExt.highlight(model.name, indices, h.mark);
-        VirtualDOM.render(h.div(highlightedName), text);
+      if (text && text.textContent !== model.name) {
+        text.textContent = model.name;
       }
 
       let modText = '';
@@ -1997,12 +1911,11 @@ export namespace DirListing {
     createDragImage(
       node: HTMLElement,
       count: number,
-      trans: TranslationBundle,
       fileType?: DocumentRegistry.IFileType
     ): HTMLElement {
-      const dragImage = node.cloneNode(true) as HTMLElement;
-      const modified = DOMUtils.findElement(dragImage, ITEM_MODIFIED_CLASS);
-      const icon = DOMUtils.findElement(dragImage, ITEM_ICON_CLASS);
+      let dragImage = node.cloneNode(true) as HTMLElement;
+      let modified = DOMUtils.findElement(dragImage, ITEM_MODIFIED_CLASS);
+      let icon = DOMUtils.findElement(dragImage, ITEM_ICON_CLASS);
       dragImage.removeChild(modified as HTMLElement);
 
       if (!fileType) {
@@ -2015,8 +1928,8 @@ export namespace DirListing {
       icon.classList.add(DRAG_ICON_CLASS);
 
       if (count > 1) {
-        const nameNode = DOMUtils.findElement(dragImage, ITEM_TEXT_CLASS);
-        nameNode.textContent = trans._n('%1 Item', '%1 Items', count);
+        let nameNode = DOMUtils.findElement(dragImage, ITEM_TEXT_CLASS);
+        nameNode.textContent = count + ' Items';
       }
       return dragImage;
     }
@@ -2025,9 +1938,9 @@ export namespace DirListing {
      * Create a node for a header item.
      */
     private _createHeaderItemNode(label: string): HTMLElement {
-      const node = document.createElement('div');
-      const text = document.createElement('span');
-      const icon = document.createElement('span');
+      let node = document.createElement('div');
+      let text = document.createElement('span');
+      let icon = document.createElement('span');
       node.className = HEADER_ITEM_CLASS;
       text.className = HEADER_ITEM_TEXT_CLASS;
       icon.className = HEADER_ITEM_ICON_CLASS;
@@ -2057,10 +1970,10 @@ namespace Private {
     text: HTMLElement,
     edit: HTMLInputElement
   ): Promise<string> {
-    const parent = text.parentElement as HTMLElement;
+    let parent = text.parentElement as HTMLElement;
     parent.replaceChild(edit, text);
     edit.focus();
-    const index = edit.value.lastIndexOf('.');
+    let index = edit.value.lastIndexOf('.');
     if (index === -1) {
       edit.setSelectionRange(0, edit.value.length);
     } else {
@@ -2112,25 +2025,25 @@ namespace Private {
     items: IIterator<Contents.IModel>,
     state: DirListing.ISortState
   ): Contents.IModel[] {
-    const copy = toArray(items);
-    const reverse = state.direction === 'descending' ? 1 : -1;
+    let copy = toArray(items);
+    let reverse = state.direction === 'descending' ? 1 : -1;
 
     if (state.key === 'last_modified') {
       // Sort by last modified (grouping directories first)
       copy.sort((a, b) => {
-        const t1 = a.type === 'directory' ? 0 : 1;
-        const t2 = b.type === 'directory' ? 0 : 1;
+        let t1 = a.type === 'directory' ? 0 : 1;
+        let t2 = b.type === 'directory' ? 0 : 1;
 
-        const valA = new Date(a.last_modified).getTime();
-        const valB = new Date(b.last_modified).getTime();
+        let valA = new Date(a.last_modified).getTime();
+        let valB = new Date(b.last_modified).getTime();
 
         return t1 - t2 || (valA - valB) * reverse;
       });
     } else {
       // Sort by name (grouping directories first)
       copy.sort((a, b) => {
-        const t1 = a.type === 'directory' ? 0 : 1;
-        const t2 = b.type === 'directory' ? 0 : 1;
+        let t1 = a.type === 'directory' ? 0 : 1;
+        let t2 = b.type === 'directory' ? 0 : 1;
 
         return t1 - t2 || b.name.localeCompare(a.name) * reverse;
       });
@@ -2143,13 +2056,11 @@ namespace Private {
    */
   export function hitTestNodes(
     nodes: HTMLElement[],
-    event: MouseEvent
+    x: number,
+    y: number
   ): number {
-    return ArrayExt.findFirstIndex(
-      nodes,
-      node =>
-        ElementExt.hitTest(node, event.clientX, event.clientY) ||
-        event.target === node
+    return ArrayExt.findFirstIndex(nodes, node =>
+      ElementExt.hitTest(node, x, y)
     );
   }
 

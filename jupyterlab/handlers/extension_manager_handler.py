@@ -9,9 +9,7 @@ import re
 
 from concurrent.futures import ThreadPoolExecutor
 
-from jupyter_server.base.handlers import APIHandler
-from jupyter_server.extension.handler import ExtensionHandlerMixin
-
+from notebook.base.handlers import APIHandler
 from tornado import gen, web
 
 from ..commands import (
@@ -99,7 +97,7 @@ class ExtensionManager(object):
                         status = 'warning'
             extensions.append(_make_extension_entry(
                 name=name,
-                description=pkg_info.get('description', ''),
+                description=pkg_info['description'],
                 url=data['url'],
                 enabled=(name not in info['disabled']),
                 core=False,
@@ -114,7 +112,7 @@ class ExtensionManager(object):
             if data is not None:
                 extensions.append(_make_extension_entry(
                     name=name,
-                    description=data.get('description', ''),
+                    description=data['description'],
                     url=data.get('homepage', ''),
                     installed=False,
                     enabled=False,
@@ -209,10 +207,9 @@ class ExtensionManager(object):
             raise gen.Return(None)
 
 
-class ExtensionHandler(ExtensionHandlerMixin, APIHandler):
+class ExtensionHandler(APIHandler):
 
-    def initialize(self, manager=None, name=None):
-        super(ExtensionHandler, self).initialize(name=name)
+    def initialize(self, manager):
         self.manager = manager
 
     @web.authenticated

@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -10,8 +10,6 @@ import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
 import { IStateDB } from '@jupyterlab/statedb';
-
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 
 import { jupyterIcon } from '@jupyterlab/ui-components';
 
@@ -56,7 +54,6 @@ export class SettingEditor extends Widget {
    */
   constructor(options: SettingEditor.IOptions) {
     super();
-    this.translator = options.translator || nullTranslator;
     this.addClass('jp-SettingEditor');
     this.key = options.key;
     this.state = options.state;
@@ -74,19 +71,14 @@ export class SettingEditor extends Widget {
       commands,
       editorFactory,
       registry,
-      rendermime,
-      translator: this.translator
+      rendermime
     }));
     const confirm = () => editor.confirm();
-    const list = (this._list = new PluginList({
-      confirm,
-      registry,
-      translator: this.translator
-    }));
+    const list = (this._list = new PluginList({ confirm, registry }));
     const when = options.when;
 
     instructions.addClass('jp-SettingEditorInstructions');
-    Private.populateInstructionsNode(instructions.node, this.translator);
+    Private.populateInstructionsNode(instructions.node);
 
     if (when) {
       this._when = Array.isArray(when) ? Promise.all(when) : when;
@@ -333,7 +325,6 @@ export class SettingEditor extends Widget {
       });
   }
 
-  protected translator: ITranslator;
   private _editor: PluginEditor;
   private _fetching: Promise<void> | null = null;
   private _instructions: Widget;
@@ -401,11 +392,6 @@ export namespace SettingEditor {
      * The point after which the editor should restore its state.
      */
     when?: Promise<any> | Array<Promise<any>>;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**
@@ -442,12 +428,7 @@ namespace Private {
   /**
    * Populate the instructions text node.
    */
-  export function populateInstructionsNode(
-    node: HTMLElement,
-    translator?: ITranslator
-  ): void {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
+  export function populateInstructionsNode(node: HTMLElement): void {
     ReactDOM.render(
       <React.Fragment>
         <h2>
@@ -461,9 +442,7 @@ namespace Private {
           <span className="jp-SettingEditorInstructions-title">Settings</span>
         </h2>
         <span className="jp-SettingEditorInstructions-text">
-          {trans.__(
-            'Select a plugin from the list to view and edit its preferences.'
-          )}
+          Select a plugin from the list to view and edit its preferences.
         </span>
       </React.Fragment>,
       node

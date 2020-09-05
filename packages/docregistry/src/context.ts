@@ -32,12 +32,6 @@ import { RenderMimeRegistry } from '@jupyterlab/rendermime';
 
 import { IRenderMime } from '@jupyterlab/rendermime-interfaces';
 
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
-
 import { DocumentRegistry } from './registry';
 
 /**
@@ -45,24 +39,21 @@ import { DocumentRegistry } from './registry';
  *
  * This class is typically instantiated by the document manager.
  */
-export class Context<
-  T extends DocumentRegistry.IModel = DocumentRegistry.IModel
-> implements DocumentRegistry.IContext<T> {
+export class Context<T extends DocumentRegistry.IModel>
+  implements DocumentRegistry.IContext<T> {
   /**
    * Construct a new document context.
    */
   constructor(options: Context.IOptions<T>) {
-    const manager = (this._manager = options.manager);
-    this.translator = options.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
+    let manager = (this._manager = options.manager);
     this._factory = options.factory;
     this._dialogs = options.sessionDialogs || sessionContextDialogs;
     this._opener = options.opener || Private.noOp;
     this._path = this._manager.contents.normalize(options.path);
     const localPath = this._manager.contents.localPath(this._path);
-    const lang = this._factory.preferredLanguage(PathExt.basename(localPath));
+    let lang = this._factory.preferredLanguage(PathExt.basename(localPath));
 
-    const dbFactory = options.modelDBFactory;
+    let dbFactory = options.modelDBFactory;
     if (dbFactory) {
       const localPath = manager.contents.localPath(this._path);
       this._modelDB = dbFactory.createNew(localPath);
@@ -75,7 +66,7 @@ export class Context<
       return this._populatedPromise.promise;
     });
 
-    const ext = PathExt.extname(this._path);
+    let ext = PathExt.extname(this._path);
     this.sessionContext = new SessionContext({
       sessionManager: manager.sessions,
       specsManager: manager.kernelspecs,
@@ -295,7 +286,7 @@ export class Context<
    */
   async download(): Promise<void> {
     const url = await this._manager.contents.getDownloadUrl(this._path);
-    const element = document.createElement('a');
+    let element = document.createElement('a');
     element.href = url;
     element.download = '';
     document.body.appendChild(element);
@@ -317,7 +308,7 @@ export class Context<
    * Create a checkpoint for the file.
    */
   createCheckpoint(): Promise<Contents.ICheckpointModel> {
-    const contents = this._manager.contents;
+    let contents = this._manager.contents;
     return this._manager.ready.then(() => {
       return contents.createCheckpoint(this._path);
     });
@@ -327,7 +318,7 @@ export class Context<
    * Delete a checkpoint for the file.
    */
   deleteCheckpoint(checkpointId: string): Promise<void> {
-    const contents = this._manager.contents;
+    let contents = this._manager.contents;
     return this._manager.ready.then(() => {
       return contents.deleteCheckpoint(this._path, checkpointId);
     });
@@ -337,8 +328,8 @@ export class Context<
    * Restore the file to a known checkpoint state.
    */
   restoreCheckpoint(checkpointId?: string): Promise<void> {
-    const contents = this._manager.contents;
-    const path = this._path;
+    let contents = this._manager.contents;
+    let path = this._path;
     return this._manager.ready.then(() => {
       if (checkpointId) {
         return contents.restoreCheckpoint(path, checkpointId);
@@ -357,7 +348,7 @@ export class Context<
    * List available checkpoints for a file.
    */
   listCheckpoints(): Promise<Contents.ICheckpointModel[]> {
-    const contents = this._manager.contents;
+    let contents = this._manager.contents;
     return this._manager.ready.then(() => {
       return contents.listCheckpoints(this._path);
     });
@@ -380,7 +371,7 @@ export class Context<
     widget: Widget,
     options: DocumentRegistry.IOpenOptions = {}
   ): IDisposable {
-    const opener = this._opener;
+    let opener = this._opener;
     if (opener) {
       opener(widget, options);
     }
@@ -437,7 +428,7 @@ export class Context<
     if (type !== 'path') {
       return;
     }
-    const path = this.sessionContext.session!.path;
+    let path = this.sessionContext.session!.path;
     if (path !== this._path) {
       this._path = path;
       this._pathChanged.emit(path);
@@ -448,7 +439,7 @@ export class Context<
    * Update our contents model, without the content.
    */
   private _updateContentsModel(model: Contents.IModel): void {
-    const newModel: Contents.IModel = {
+    let newModel: Contents.IModel = {
       path: model.path,
       name: model.name,
       type: model.type,
@@ -459,7 +450,7 @@ export class Context<
       mimetype: model.mimetype,
       format: model.format
     };
-    const mod = this._contentsModel ? this._contentsModel.last_modified : null;
+    let mod = this._contentsModel ? this._contentsModel.last_modified : null;
     this._contentsModel = newModel;
     if (!mod || newModel.last_modified !== mod) {
       this._fileChanged.emit(newModel);
@@ -480,7 +471,7 @@ export class Context<
         return;
       }
       // Update the kernel preference.
-      const name =
+      let name =
         this._model.defaultKernelName ||
         this.sessionContext.kernelPreference.name;
       this.sessionContext.kernelPreference = {
@@ -502,9 +493,9 @@ export class Context<
   /**
    * Save the document contents to disk.
    */
-  private async _save(): Promise<void> {
+  private _save(): Promise<void> {
     this._saveState.emit('started');
-    const model = this._model;
+    let model = this._model;
     let content: PartialJSONValue;
     if (this._factory.fileFormat === 'json') {
       content = model.toJSON();
@@ -515,52 +506,60 @@ export class Context<
       }
     }
 
-    const options = {
+    let options = {
       type: this._factory.contentType,
       format: this._factory.fileFormat,
       content
     };
-    try {
-      let value: Contents.IModel;
-      await this._manager.ready;
-      if (!model.modelDB.isCollaborative) {
-        value = await this._maybeSave(options);
-      } else {
-        value = await this._manager.contents.save(this._path, options);
-      }
-      if (this.isDisposed) {
-        return;
-      }
 
-      model.dirty = false;
-      this._updateContentsModel(value);
+    return this._manager.ready
+      .then(() => {
+        if (!model.modelDB.isCollaborative) {
+          return this._maybeSave(options);
+        }
+        return this._manager.contents.save(this._path, options);
+      })
+      .then(value => {
+        if (this.isDisposed) {
+          return;
+        }
 
-      if (!this._isPopulated) {
-        await this._populate();
-      }
+        model.dirty = false;
+        this._updateContentsModel(value);
 
-      // Emit completion.
-      this._saveState.emit('completed');
-    } catch (err) {
-      // If the save has been canceled by the user,
-      // throw the error so that whoever called save()
-      // can decide what to do.
-      if (err.message === 'Cancel') {
+        if (!this._isPopulated) {
+          return this._populate();
+        }
+      })
+      .catch(err => {
+        // If the save has been canceled by the user,
+        // throw the error so that whoever called save()
+        // can decide what to do.
+        if (err.message === 'Cancel') {
+          throw err;
+        }
+
+        // Otherwise show an error message and throw the error.
+        const localPath = this._manager.contents.localPath(this._path);
+        const name = PathExt.basename(localPath);
+        void this._handleError(err, `File Save Error for ${name}`);
         throw err;
-      }
-
-      // Otherwise show an error message and throw the error.
-      const localPath = this._manager.contents.localPath(this._path);
-      const name = PathExt.basename(localPath);
-      void this._handleError(
-        err,
-        this._trans.__('File Save Error for %1', name)
-      );
-
-      // Emit failure.
-      this._saveState.emit('failed');
-      throw err;
-    }
+      })
+      .then(
+        value => {
+          // Capture all success paths and emit completion.
+          this._saveState.emit('completed');
+          return value;
+        },
+        err => {
+          // Capture all error paths and emit failure.
+          this._saveState.emit('failed');
+          throw err;
+        }
+      )
+      .catch(() => {
+        /* no-op */
+      });
   }
 
   /**
@@ -570,13 +569,13 @@ export class Context<
    * deserializing the content.
    */
   private _revert(initializeModel: boolean = false): Promise<void> {
-    const opts: Contents.IFetchOptions = {
+    let opts: Contents.IFetchOptions = {
       format: this._factory.fileFormat,
       type: this._factory.contentType,
       content: true
     };
-    const path = this._path;
-    const model = this._model;
+    let path = this._path;
+    let model = this._model;
     return this._manager.ready
       .then(() => {
         return this._manager.contents.get(path, opts);
@@ -585,7 +584,7 @@ export class Context<
         if (this.isDisposed) {
           return;
         }
-        const dirty = false;
+        let dirty = false;
         if (contents.format === 'json') {
           model.fromJSON(contents.content);
           if (initializeModel) {
@@ -615,10 +614,11 @@ export class Context<
       .catch(async err => {
         const localPath = this._manager.contents.localPath(this._path);
         const name = PathExt.basename(localPath);
-        void this._handleError(
-          err,
-          this._trans.__('File Load Error for %1', name)
-        );
+        const response = await err.response.json();
+        if (err.message === 'Invalid response: 400 bad format') {
+          err = new Error(response.message);
+        }
+        void this._handleError(err, `File Load Error for ${name}`);
         throw err;
       });
   }
@@ -629,9 +629,9 @@ export class Context<
   private _maybeSave(
     options: Partial<Contents.IModel>
   ): Promise<Contents.IModel> {
-    const path = this._path;
+    let path = this._path;
     // Make sure the file has not changed on disk.
-    const promise = this._manager.contents.get(path, { content: false });
+    let promise = this._manager.contents.get(path, { content: false });
     return promise.then(
       model => {
         if (this.isDisposed) {
@@ -641,9 +641,9 @@ export class Context<
         // (our last save)
         // In some cases the filesystem reports an inconsistent time,
         // so we allow 0.5 seconds difference before complaining.
-        const modified = this.contentsModel?.last_modified;
-        const tClient = modified ? new Date(modified) : new Date();
-        const tDisk = new Date(model.last_modified);
+        let modified = this.contentsModel?.last_modified;
+        let tClient = modified ? new Date(modified) : new Date();
+        let tDisk = new Date(model.last_modified);
         if (modified && tDisk.getTime() - tClient.getTime() > 500) {
           // 500 ms
           return this._timeConflict(tClient, model, options);
@@ -666,7 +666,21 @@ export class Context<
     err: Error | ServerConnection.ResponseError,
     title: string
   ): Promise<void> {
-    await showErrorMessage(title, err);
+    // Check for a more specific error message.
+    let error = { message: '' };
+    if (err instanceof ServerConnection.ResponseError) {
+      const text = await err.response.text();
+      let body = '';
+      try {
+        body = JSON.parse(text).message;
+      } catch (e) {
+        body = text;
+      }
+      error.message = body || err.message;
+    } else {
+      error.message = err.message;
+    }
+    await showErrorMessage(title, error);
     return;
   }
 
@@ -705,35 +719,31 @@ export class Context<
     model: Contents.IModel,
     options: Partial<Contents.IModel>
   ): Promise<Contents.IModel> {
-    const tDisk = new Date(model.last_modified);
+    let tDisk = new Date(model.last_modified);
     console.warn(
       `Last saving performed ${tClient} ` +
         `while the current file seems to have been saved ` +
         `${tDisk}`
     );
-    const body = this._trans.__(
-      `"%1" has changed on disk since the last time it was opened or saved.
-Do you want to overwrite the file on disk with the version open here, 
-or load the version on disk (revert)?`,
-      this.path
-    );
-    const revertBtn = Dialog.okButton({ label: this._trans.__('Revert') });
-    const overwriteBtn = Dialog.warnButton({
-      label: this._trans.__('Overwrite')
-    });
+    let body =
+      `"${this.path}" has changed on disk since the last time it ` +
+      `was opened or saved. ` +
+      `Do you want to overwrite the file on disk with the version ` +
+      ` open here, or load the version on disk (revert)?`;
+    let revertBtn = Dialog.okButton({ label: 'Revert' });
+    let overwriteBtn = Dialog.warnButton({ label: 'Overwrite' });
     return showDialog({
-      title: this._trans.__('File Changed'),
+      title: 'File Changed',
       body,
       buttons: [Dialog.cancelButton(), revertBtn, overwriteBtn]
     }).then(result => {
       if (this.isDisposed) {
         return Promise.reject(new Error('Disposed'));
       }
-      if (result.button.label === this._trans.__('Overwrite')) {
+      if (result.button.label === 'Overwrite') {
         return this._manager.contents.save(this._path, options);
       }
-      // FIXME-TRANS: Why compare to label?
-      if (result.button.label === this._trans.__('Revert')) {
+      if (result.button.label === 'Revert') {
         return this.revert().then(() => {
           return model;
         });
@@ -746,23 +756,17 @@ or load the version on disk (revert)?`,
    * Handle a time conflict.
    */
   private _maybeOverWrite(path: string): Promise<void> {
-    const body = this._trans.__(
-      '"%1" already exists. Do you want to replace it?',
-      path
-    );
-    const overwriteBtn = Dialog.warnButton({
-      label: this._trans.__('Overwrite')
-    });
+    let body = `"${path}" already exists. Do you want to replace it?`;
+    let overwriteBtn = Dialog.warnButton({ label: 'Overwrite' });
     return showDialog({
-      title: this._trans.__('File Overwrite?'),
+      title: 'File Overwrite?',
       body,
       buttons: [Dialog.cancelButton(), overwriteBtn]
     }).then(result => {
       if (this.isDisposed) {
         return Promise.reject(new Error('Disposed'));
       }
-      // FIXME-TRANS: Why compare to label?
-      if (result.button.label === this._trans.__('Overwrite')) {
+      if (result.button.label === 'Overwrite') {
         return this._manager.contents.delete(path).then(() => {
           return this._finishSaveAs(path);
         });
@@ -775,15 +779,18 @@ or load the version on disk (revert)?`,
    */
   private async _finishSaveAs(newPath: string): Promise<void> {
     this._path = newPath;
-    await this.sessionContext.session?.setPath(newPath);
-    await this.sessionContext.session?.setName(newPath.split('/').pop()!);
-    await this.save();
-    this._pathChanged.emit(this._path);
-    await this._maybeCheckpoint(true);
+    return this.sessionContext.session
+      ?.setPath(newPath)
+      .then(() => {
+        void this.sessionContext.session?.setName(newPath.split('/').pop()!);
+        return this.save();
+      })
+      .then(() => {
+        this._pathChanged.emit(this._path);
+        return this._maybeCheckpoint(true);
+      });
   }
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _manager: ServiceManager.IManager;
   private _opener: (
     widget: Widget,
@@ -854,11 +861,6 @@ export namespace Context {
      * The dialogs used for the session context.
      */
     sessionDialogs?: ISessionContext.IDialogs;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -869,21 +871,14 @@ namespace Private {
   /**
    * Get a new file path from the user.
    */
-  export function getSavePath(
-    path: string,
-    translator?: ITranslator
-  ): Promise<string | undefined> {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
-
-    const saveBtn = Dialog.okButton({ label: trans.__('Save') });
+  export function getSavePath(path: string): Promise<string | undefined> {
+    let saveBtn = Dialog.okButton({ label: 'Save' });
     return showDialog({
-      title: trans.__('Save File As..'),
+      title: 'Save File As..',
       body: new SaveWidget(path),
       buttons: [Dialog.cancelButton(), saveBtn]
     }).then(result => {
-      // FIXME-TRANS: Why use the label?
-      if (result.button.label === trans.__('Save')) {
+      if (result.button.label === 'Save') {
         return result.value ?? undefined;
       }
       return;
@@ -920,7 +915,7 @@ namespace Private {
    * Create the node for a save widget.
    */
   function createSaveNode(path: string): HTMLElement {
-    const input = document.createElement('input');
+    let input = document.createElement('input');
     input.value = path;
     return input;
   }

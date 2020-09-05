@@ -7,9 +7,6 @@
   "include": ["src/*"],
   "references": [
     {
-      "path": "../application"
-    },
-    {
       "path": "../apputils"
     },
     {
@@ -20,9 +17,6 @@
     },
     {
       "path": "../settingregistry"
-    },
-    {
-      "path": "../translation"
     },
     {
       "path": "../ui-components"

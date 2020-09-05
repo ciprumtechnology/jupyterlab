@@ -72,7 +72,7 @@ export class NotebookSearchProvider implements ISearchProvider<NotebookPanel> {
     const allMatches: ISearchMatch[] = [];
     // For each cell, create a search provider and collect the matches
 
-    for (const cell of cells) {
+    for (let cell of cells) {
       const cmEditor = cell.editor as CodeMirrorEditor;
       const cmSearchProvider = new CodeMirrorSearchProvider();
       cmSearchProvider.isSubProvider = true;
@@ -131,7 +131,7 @@ export class NotebookSearchProvider implements ISearchProvider<NotebookPanel> {
       if (cell instanceof CodeCell && this._filters.output) {
         const outputProivder = new GenericSearchProvider();
         outputProivder.isSubProvider = true;
-        const matchesFromOutput = await outputProivder.startQuery(
+        let matchesFromOutput = await outputProivder.startQuery(
           query,
           cell.outputArea
         );
@@ -172,7 +172,7 @@ export class NotebookSearchProvider implements ISearchProvider<NotebookPanel> {
   private _refreshCellsEditorsInBackground(cells: Cell[], n: number = 5) {
     let i = 0;
 
-    const refreshNextNCells = () => {
+    let refreshNextNCells = () => {
       for (let stop = i + n; i < stop && i < cells.length; i++) {
         cells[i].editor.refresh();
       }
@@ -327,7 +327,7 @@ export class NotebookSearchProvider implements ISearchProvider<NotebookPanel> {
    */
   async replaceAllMatches(newText: string): Promise<boolean> {
     let replaceOccurred = false;
-    for (const index in this._searchProviders) {
+    for (let index in this._searchProviders) {
       const { provider } = this._searchProviders[index];
       const singleReplaceOccurred = await provider.replaceAllMatches(newText);
       replaceOccurred = singleReplaceOccurred ? true : replaceOccurred;

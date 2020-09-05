@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -15,12 +15,6 @@ import {
 
 import { ISchemaValidator } from '@jupyterlab/settingregistry';
 
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
-
 import { ReadonlyJSONObject } from '@lumino/coreutils';
 
 import { RawEditor } from './raweditor';
@@ -30,23 +24,18 @@ import { RawEditor } from './raweditor';
  */
 export function createInspector(
   editor: RawEditor,
-  rendermime?: IRenderMimeRegistry,
-  translator?: ITranslator
+  rendermime?: IRenderMimeRegistry
 ): InspectorPanel {
-  translator = translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
-  const connector = new InspectorConnector(editor, translator);
+  const connector = new InspectorConnector(editor);
   const inspector = new InspectorPanel({
-    initialContent: trans.__('Any errors will be listed here'),
-    translator: translator
+    initialContent: 'Any errors will be listed here'
   });
   const handler = new InspectionHandler({
     connector,
     rendermime:
       rendermime ||
       new RenderMimeRegistry({
-        initialFactories: standardRendererFactories,
-        translator: translator
+        initialFactories: standardRendererFactories
       })
   });
 
@@ -70,11 +59,9 @@ class InspectorConnector extends DataConnector<
   void,
   InspectionHandler.IRequest
 > {
-  constructor(editor: RawEditor, translator?: ITranslator) {
+  constructor(editor: RawEditor) {
     super();
-    this.translator = translator || nullTranslator;
     this._editor = editor;
-    this._trans = this.translator.load('jupyterlab');
   }
 
   /**
@@ -94,7 +81,7 @@ class InspectorConnector extends DataConnector<
 
         if (!errors) {
           return resolve({
-            data: { 'text/markdown': this._trans.__('No errors found') },
+            data: { 'text/markdown': 'No errors found' },
             metadata: {}
           });
         }
@@ -116,8 +103,6 @@ class InspectorConnector extends DataConnector<
     return validator.validateData({ data, id, raw, schema, version }, false);
   }
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _current = 0;
   private _editor: RawEditor;
 }

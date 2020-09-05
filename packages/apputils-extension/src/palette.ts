@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -10,7 +10,6 @@ import { CommandPalette } from '@lumino/widgets';
 
 import { ILayoutRestorer, JupyterFrontEnd } from '@jupyterlab/application';
 import { ICommandPalette, IPaletteItem } from '@jupyterlab/apputils';
-import { ITranslator, nullTranslator } from '@jupyterlab/translation';
 import { CommandPaletteSvg, paletteIcon } from '@jupyterlab/ui-components';
 
 /**
@@ -28,12 +27,10 @@ export class Palette implements ICommandPalette {
   /**
    * Create a palette instance.
    */
-  constructor(palette: CommandPalette, translator?: ITranslator) {
-    this.translator = translator || nullTranslator;
-    const trans = this.translator.load('jupyterlab');
+  constructor(palette: CommandPalette) {
     this._palette = palette;
     this._palette.title.label = '';
-    this._palette.title.caption = trans.__('Command Palette');
+    this._palette.title.caption = 'Command Palette';
   }
 
   /**
@@ -61,13 +58,12 @@ export class Palette implements ICommandPalette {
    * @returns A disposable that will remove the item from the palette.
    */
   addItem(options: IPaletteItem): IDisposable {
-    const item = this._palette.addItem(options as CommandPalette.IItemOptions);
+    let item = this._palette.addItem(options as CommandPalette.IItemOptions);
     return new DisposableDelegate(() => {
       this._palette.removeItem(item);
     });
   }
 
-  protected translator: ITranslator;
   private _palette: CommandPalette;
 }
 
@@ -78,13 +74,9 @@ export namespace Palette {
   /**
    * Activate the command palette.
    */
-  export function activate(
-    app: JupyterFrontEnd,
-    translator: ITranslator
-  ): ICommandPalette {
+  export function activate(app: JupyterFrontEnd): ICommandPalette {
     const { commands, shell } = app;
-    const trans = translator.load('jupyterlab');
-    const palette = Private.createPalette(app, translator);
+    const palette = Private.createPalette(app);
 
     // Show the current palette shortcut in its title.
     const updatePaletteTitle = () => {
@@ -94,9 +86,9 @@ export namespace Palette {
       );
       if (binding) {
         const ks = CommandRegistry.formatKeystroke(binding.keys.join(' '));
-        palette.title.caption = trans.__('Commands (%1)', ks);
+        palette.title.caption = `Commands (${ks})`;
       } else {
-        palette.title.caption = trans.__('Commands');
+        palette.title.caption = 'Commands';
       }
     };
     updatePaletteTitle();
@@ -108,14 +100,14 @@ export namespace Palette {
       execute: () => {
         shell.activateById(palette.id);
       },
-      label: trans.__('Activate Command Palette')
+      label: 'Activate Command Palette'
     });
 
-    palette.inputNode.placeholder = trans.__('SEARCH');
+    palette.inputNode.placeholder = 'SEARCH';
 
     shell.add(palette, 'left', { rank: 300 });
 
-    return new Palette(palette, translator);
+    return new Palette(palette);
   }
 
   /**
@@ -123,10 +115,9 @@ export namespace Palette {
    */
   export function restore(
     app: JupyterFrontEnd,
-    restorer: ILayoutRestorer,
-    translator: ITranslator
+    restorer: ILayoutRestorer
   ): void {
-    const palette = Private.createPalette(app, translator);
+    const palette = Private.createPalette(app);
 
     // Let the application restorer track the command palette for restoration of
     // application state (e.g. setting the command palette as the current side bar
@@ -147,10 +138,7 @@ namespace Private {
   /**
    * Create the application-wide command palette.
    */
-  export function createPalette(
-    app: JupyterFrontEnd,
-    translator: ITranslator
-  ): CommandPalette {
+  export function createPalette(app: JupyterFrontEnd): CommandPalette {
     if (!palette) {
       // use a renderer tweaked to use inline svg icons
       palette = new CommandPalette({
@@ -159,8 +147,7 @@ namespace Private {
       });
       palette.id = 'command-palette';
       palette.title.icon = paletteIcon;
-      const trans = translator.load('jupyterlab');
-      palette.title.label = trans.__('Commands');
+      palette.title.label = 'Commands';
     }
 
     return palette;

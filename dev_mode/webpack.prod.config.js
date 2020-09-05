@@ -1,5 +1,5 @@
-const merge = require('webpack-merge').default;
-const config = require('./webpack.config');
+var merge = require('webpack-merge');
+var config = require('./webpack.config');
 
 config[0] = merge(config[0], {
   mode: 'production',

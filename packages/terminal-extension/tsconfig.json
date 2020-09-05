@@ -32,9 +32,6 @@
       "path": "../terminal"
     },
     {
-      "path": "../translation"
-    },
-    {
       "path": "../ui-components"
     }
   ]

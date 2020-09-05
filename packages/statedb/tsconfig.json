@@ -6,6 +6,5 @@
     "module": "commonjs",
     "types": ["node"]
   },
-  "include": ["src/*"],
-  "references": []
+  "include": ["src/*"]
 }

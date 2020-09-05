@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/template",
-  "version": "3.0.0-beta.1",
+  "version": "2.1.0",
   "description": "JupyterLab - Package Template",
   "homepage": "https://github.com/jupyterlab/jupyterlab",
   "bugs": {
@@ -12,6 +12,11 @@
   },
   "license": "BSD-3-Clause",
   "author": "Project Jupyter",
+  "files": [
+    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+    "schema/*.json",
+    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+  ],
   "sideEffects": [
     "style/**/*"
   ],
@@ -20,29 +25,15 @@
   "directories": {
     "lib": "lib/"
   },
-  "files": [
-    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
-    "schema/*.json",
-    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
-  ],
   "scripts": {
-    "build": "tsc -b",
-    "build:test": "tsc --build tsconfig.test.json",
-    "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
+    "build": "tsc",
+    "clean": "rimraf lib",
     "prepublishOnly": "npm run build",
-    "test": "jest",
-    "test:cov": "jest --collect-coverage",
-    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
-    "test:debug:watch": "node --inspect-brk node_modules/.bin/jest --runInBand --watch",
-    "watch": "tsc -b --watch"
+    "watch": "tsc -w --listEmittedFiles"
   },
   "devDependencies": {
-    "@jupyterlab/testutils": "^3.0.0-beta.1",
-    "@types/jest": "^26.0.10",
-    "jest": "^26.4.2",
     "rimraf": "~3.0.0",
-    "ts-jest": "^26.3.0",
-    "typescript": "~4.0.2"
+    "typescript": "~3.7.3"
   },
   "publishConfig": {
     "access": "public"

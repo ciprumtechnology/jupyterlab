@@ -16,9 +16,6 @@
       "path": "../codeeditor"
     },
     {
-      "path": "../codemirror"
-    },
-    {
       "path": "../console"
     },
     {
@@ -44,9 +41,6 @@
     },
     {
       "path": "../statusbar"
-    },
-    {
-      "path": "../translation"
     },
     {
       "path": "../ui-components"

@@ -107,7 +107,7 @@ export class CommHandler extends DisposableDelegate implements Kernel.IComm {
     if (this.isDisposed || this._kernel.isDisposed) {
       throw new Error('Cannot open');
     }
-    const msg = KernelMessage.createMessage({
+    let msg = KernelMessage.createMessage({
       msgType: 'comm_open',
       channel: 'shell',
       username: this._kernel.username,
@@ -140,7 +140,7 @@ export class CommHandler extends DisposableDelegate implements Kernel.IComm {
     if (this.isDisposed || this._kernel.isDisposed) {
       throw new Error('Cannot send');
     }
-    const msg = KernelMessage.createMessage({
+    let msg = KernelMessage.createMessage({
       msgType: 'comm_msg',
       channel: 'shell',
       username: this._kernel.username,
@@ -174,7 +174,7 @@ export class CommHandler extends DisposableDelegate implements Kernel.IComm {
     if (this.isDisposed || this._kernel.isDisposed) {
       throw new Error('Cannot close');
     }
-    const msg = KernelMessage.createMessage({
+    let msg = KernelMessage.createMessage({
       msgType: 'comm_close',
       channel: 'shell',
       username: this._kernel.username,
@@ -186,10 +186,10 @@ export class CommHandler extends DisposableDelegate implements Kernel.IComm {
       metadata,
       buffers
     });
-    const future = this._kernel.sendShellMessage(msg, false, true);
-    const onClose = this._onClose;
+    let future = this._kernel.sendShellMessage(msg, false, true);
+    let onClose = this._onClose;
     if (onClose) {
-      const ioMsg = KernelMessage.createMessage({
+      let ioMsg = KernelMessage.createMessage({
         msgType: 'comm_close',
         channel: 'iopub',
         username: this._kernel.username,
@@ -203,7 +203,7 @@ export class CommHandler extends DisposableDelegate implements Kernel.IComm {
       });
       // In the future, we may want to communicate back to the user the possible
       // promise returned from onClose.
-      void onClose(ioMsg);
+      onClose(ioMsg);
     }
     this.dispose();
     return future;

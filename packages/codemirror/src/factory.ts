@@ -3,8 +3,6 @@
 
 import { CodeEditor, IEditorFactoryService } from '@jupyterlab/codeeditor';
 
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
-
 import { CodeMirrorEditor } from './editor';
 
 /**
@@ -14,11 +12,7 @@ export class CodeMirrorEditorFactory implements IEditorFactoryService {
   /**
    * Construct an IEditorFactoryService for CodeMirrorEditors.
    */
-  constructor(
-    defaults: Partial<CodeMirrorEditor.IConfig> = {},
-    translator?: ITranslator
-  ) {
-    this.translator = translator || nullTranslator;
+  constructor(defaults: Partial<CodeMirrorEditor.IConfig> = {}) {
     this.inlineCodeMirrorConfig = {
       ...CodeMirrorEditor.defaultConfig,
       extraKeys: {
@@ -56,8 +50,7 @@ export class CodeMirrorEditorFactory implements IEditorFactoryService {
     options.host.dataset.type = 'inline';
     return new CodeMirrorEditor({
       ...options,
-      config: { ...this.inlineCodeMirrorConfig, ...(options.config || {}) },
-      translator: this.translator
+      config: { ...this.inlineCodeMirrorConfig, ...(options.config || {}) }
     });
   };
 
@@ -68,12 +61,10 @@ export class CodeMirrorEditorFactory implements IEditorFactoryService {
     options.host.dataset.type = 'document';
     return new CodeMirrorEditor({
       ...options,
-      config: { ...this.documentCodeMirrorConfig, ...(options.config || {}) },
-      translator: this.translator
+      config: { ...this.documentCodeMirrorConfig, ...(options.config || {}) }
     });
   };
 
-  protected translator: ITranslator;
   protected inlineCodeMirrorConfig: Partial<CodeMirrorEditor.IConfig>;
   protected documentCodeMirrorConfig: Partial<CodeMirrorEditor.IConfig>;
 }

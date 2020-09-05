@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -33,7 +33,7 @@ const INPUT_PROMPT_CLASS = 'jp-InputPrompt';
  */
 const INPUT_AREA_EDITOR_CLASS = 'jp-InputArea-editor';
 
-/** ****************************************************************************
+/******************************************************************************
  * InputArea
  ******************************************************************************/
 
@@ -47,24 +47,24 @@ export class InputArea extends Widget {
   constructor(options: InputArea.IOptions) {
     super();
     this.addClass(INPUT_AREA_CLASS);
-    const model = (this.model = options.model);
-    const contentFactory = (this.contentFactory =
+    let model = (this.model = options.model);
+    let contentFactory = (this.contentFactory =
       options.contentFactory || InputArea.defaultContentFactory);
 
     // Prompt
-    const prompt = (this._prompt = contentFactory.createInputPrompt());
+    let prompt = (this._prompt = contentFactory.createInputPrompt());
     prompt.addClass(INPUT_AREA_PROMPT_CLASS);
 
     // Editor
-    const editorOptions = {
+    let editorOptions = {
       model,
       factory: contentFactory.editorFactory,
       updateOnShow: options.updateOnShow
     };
-    const editor = (this._editor = new CodeEditorWrapper(editorOptions));
+    let editor = (this._editor = new CodeEditorWrapper(editorOptions));
     editor.addClass(INPUT_AREA_EDITOR_CLASS);
 
-    const layout = (this.layout = new PanelLayout());
+    let layout = (this.layout = new PanelLayout());
     layout.addWidget(prompt);
     layout.addWidget(editor);
   }
@@ -104,7 +104,7 @@ export class InputArea extends Widget {
    * Render an input instead of the text editor.
    */
   renderInput(widget: Widget): void {
-    const layout = this.layout as PanelLayout;
+    let layout = this.layout as PanelLayout;
     if (this._rendered) {
       this._rendered.parent = null;
     }
@@ -248,7 +248,7 @@ export namespace InputArea {
    * A function to create the default CodeMirror editor factory.
    */
   function _createDefaultEditorFactory(): CodeEditor.Factory {
-    const editorServices = new CodeMirrorEditorFactory();
+    let editorServices = new CodeMirrorEditorFactory();
     return editorServices.newInlineEditor;
   }
 
@@ -263,7 +263,7 @@ export namespace InputArea {
   export const defaultContentFactory = new ContentFactory({});
 }
 
-/** ****************************************************************************
+/******************************************************************************
  * InputPrompt
  ******************************************************************************/
 

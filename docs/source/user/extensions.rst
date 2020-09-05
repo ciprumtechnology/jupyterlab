@@ -16,11 +16,13 @@ or privileged than any custom extension.
     :local:
     :depth: 1
 
-Starting in JupyterLab 3.0, extensions are typically ``pip`` or ``conda``
-packages that are dynamically loaded by the application (no more build step). You can search using ``pip search "jupyterlab extension"`` to find extensions. For information about developing extensions,
+JupyterLab extensions are `npm <https://www.npmjs.com/>`__ packages (the
+standard package format in Javascript development). You can search for the
+keyword `jupyterlab-extension
+<https://www.npmjs.com/search?q=keywords%3Ajupyterlab-extension>`__ on the
+npm registry to find extensions. For information about developing extensions,
 see the :ref:`developer documentation <developer_extensions>`.
-Once an extension is installed, you can refresh a running application
-or launch a new application to use the new extension.
+
 
 .. note::
 
@@ -28,10 +30,7 @@ or launch a new application to use the new extension.
    developer API is not stable and will evolve in the near future.
 
 
-Built-in Extensions
---------------------
-
-In order to install JupyterLab built in (bundled) extensions, you need to have `Node.js
+In order to install JupyterLab extensions, you need to have `Node.js
 <https://nodejs.org/>`__ installed.
 
 If you use ``conda`` with ``conda-forge`` packages, you can get it with:
@@ -50,6 +49,152 @@ If you use `Homebrew <https://brew.sh/>`__ on Mac OS X:
 
 You can also download Node.js from the `Node.js website <https://nodejs.org/>`__ and
 install it directly.
+
+
+Using the Extension Manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To manage your extensions, you can use the extension manager. By default, the
+manager is disabled. You can enable it by searching **Extension Manager** in the command palette.
+
+.. figure:: images/extension_manager_enable_manager.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** Enable extension manager by searching in the command palette
+
+You can also enable it with the following steps:
+
+
+   - Go into advanced settings editor.
+   - Open the Extension Manager section.
+   - Add the entry "enabled": true.
+   - Save the settings.
+   - If prompted whether you are sure, read the warning, and click "Enable"
+     if you are still sure.
+
+Once enabled, you should see a new tab appear in the :ref:`left sidebar <left-sidebar>`.
+
+
+.. figure:: images/extension_manager_default.png
+   :align: center
+   :class: jp-screenshotls 
+
+   **Figure:** The default view has three components: a search bar, an "Installed"
+   section, and a "Discover" section.
+
+
+Disclaimer
+^^^^^^^^^^
+
+.. danger::
+
+    Installing an extension allows it to execute arbitrary code on the
+    server, kernel, and in the client's browser. Therefore we ask you 
+    to explicitly acknowledge this.
+
+
+By default, the disclaimer is not acknowledged.
+
+.. figure:: images/listings/disclaimer_unchecked.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** User has not acknowledged the disclaimer
+
+
+As the disclaimer is not acknowledged, you can search for an extension,
+but can not install it (no install button is available).
+
+.. figure:: images/listings/disclaimer_unchecked_noinstall.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** With Disclaimer unchecked, you can not install an extension
+
+
+To install an extensino, you first have to explicitly acknowledge the disclaimer.
+Once done, this will remain across sessions and the user does not have to 
+check it again.
+
+.. figure:: images/listings/disclaimer_checked.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** Disclaimer checked
+
+For ease of use, you can hide the disclaimer so it takes less space on
+your screen.
+
+.. figure:: images/listings/disclaimer_hidden.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** Disclaimer is hidden
+
+
+Finding Extensions
+^^^^^^^^^^^^^^^^^^
+
+You can use the extension manager to find extensions for JupyterLab. To discovery
+freely among the currently available extensions, expand the "Discovery" section.
+This triggers a search for all JupyterLab extensions on the NPM registry, and
+the results are listed according to the `registry's sort order
+<https://docs.npmjs.com/searching-for-and-choosing-packages-to-download#package-search-rank-criteria>`__.
+An exception to this sort order is that extensions released by the Jupyter
+organization are always placed first. These extensions are distinguished by
+a small Jupyter icon next to their name.
+
+
+.. image:: images/extension_manager_discover.png
+   :align: center
+   :class: jp-screenshot
+   :alt: Screenshot showing the discovery extension listing.
+
+
+Alternatively, you can limit your discovery by using the search bar. This
+performs a free-text search of JupyterLab extensions on the NPM registry.
+
+.. image:: images/extension_manager_search.png
+   :align: center
+   :class: jp-screenshot
+   :alt: Screenshot showing an example search result
+
+
+Installing an Extension
+^^^^^^^^^^^^^^^^^^^^^^^
+
+Once you have found an extension that you think is interesting, install
+it by clicking the "Install" button of the extension list entry.
+
+
+.. danger::
+
+    Installing an extension allows it to execute arbitrary code on the
+    server, kernel, and in the client's browser. You should therefore
+    avoid installing extensions you do not trust, and watch out for
+    any extensions trying to masquerade as a trusted extension.
+
+
+A short while after starting the install of an extension, a drop-down should
+appear under the search bar indicating that the extension has been
+downloaded, but that a rebuild is needed to complete the installation.
+
+
+.. image:: images/extension_manager_rebuild.png
+   :align: center
+   :class: jp-screenshot
+   :alt: Screenshot showing the rebuild indicator
+
+
+If you want to install/uninstall other extensions as well, you can ignore
+the rebuild notice until you have made all the changes you want. Once satisfied,
+click the 'Rebuild' button to start a rebuild in the background.
+Once the rebuild completes, a dialog will pop up, indicating that a reload of
+the page is needed in order to load the latest build into the browser.
+
+If you ignore the rebuild notice by mistake, simply refresh your browser
+window to trigger a new rebuild check.
 
 
 Disabling Rebuild Checks
@@ -75,6 +220,182 @@ in any of the ``config`` locations returned by ``jupyter --paths``.
     }
 
 
+Managing Installed Extensions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+When there are some installed extensions, they will be shown in the "Installed"
+section. These can then be uninstalled or disabled. Disabling an extension will
+prevent it from being activated, but without rebuilding the application.
+
+
+Companion packages
+^^^^^^^^^^^^^^^^^^
+
+During installation of an extension, JupyterLab will inspect the package
+metadata for any
+:ref:`instructions on companion packages <ext-author-companion-packages>`.
+Companion packages can be:
+
+   - Notebook server extensions (or any other packages that need to be
+     installed on the Notebook server).
+   - Kernel packages. An example of companion packages for the
+     kernel are Jupyter Widget packages, like the `ipywidgets <https://ipywidgets.readthedocs.io/en/stable>`__
+     Python package for the
+     `@jupyter-widgets/jupyterlab-manager package <https://www.npmjs.com/package/@jupyter-widgets/jupyterlab-manager>`__.
+
+If JupyterLab finds instructions for companion packages, it will present
+a dialog to notify you about these. These are informational only, and it
+will be up to you to take these into account or not.
+
+
+.. _extension_listings:
+
+Listings
+~~~~~~~~
+
+When searching extensions, JupyterLab displays the complete search result and 
+the user is free to install any extension. This is the :ref:`default_mode`.
+
+To bring more security, you or your administrator can enable ``blacklists`` or ``whitelists``
+mode. JupyterLab will check the extensions against the defined listings.
+
+.. warning::
+
+    Only one mode at a time is allowed. If you or your server administrator configures
+    both black and white listings, the extension manager will be disabled.
+
+
+.. figure:: images/listings/simultaneous_black_white_listings.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** Simultaneous black and white listings
+
+
+The following details the behavior for the :ref:`blacklist_mode` and the :ref:`whitelist_mode`.
+The details to enable configure the listings can be read :ref:`listings_conf`. 
+
+.. _default_mode:
+
+Default mode
+^^^^^^^^^^^^
+
+In the ``default`` mode, no listing is enabled and the search behavior is unchanged and
+is the one described previously.
+
+.. _blacklist_mode:
+
+Blacklist mode
+^^^^^^^^^^^^^^
+
+Extensions can be freely downloaded without going through a vetting process.
+However, users can add malicious extensions to a blacklist. The extension manager 
+will show all extensions except for those that have 
+been explicitly added to the blacklist. Therfore, the extension manager 
+does not allow you to install blacklisted extensions.
+
+If you, or your administrator, has enabled the blacklist mode,
+JupyterLab will use the blacklist and remove all blacklisted
+extensions from your search result.
+
+If you have installed an extension before it has been blacklisted,
+the extension entry in the installed list will be highlighted
+in red. It is recommended that you uninstall it. You can move
+your mouse on the question mark icon to read the instructions.
+
+.. figure:: images/listings/installed_blacklisted.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** Blacklisted installed extension which should be removed
+
+
+.. _whitelist_mode:
+
+Whitelist mode
+^^^^^^^^^^^^^^
+
+A whitelist maintains a set of approved extensions that users can freely 
+search and install. Extensions need to go through some sort of vetting process 
+before they are added to the whitelist. When using a whitelist, the extension manager 
+will only show extensions that have been explicitly added to the whitelist.
+
+If you, or your administrator, has enabled the whitelist mode
+JupyterLab will use the whitelist and only show extensions present
+in the withelist. The other extensions will not be show in the search result.
+
+If you have installed an whitelisted extension and at some point
+in time that extension is removed from the whitelist, the extension entry 
+in the installed list will be highlighted in red. It is recommended that 
+you uninstall it. You can move your mouse on the question mark icon to
+read the instructions.
+
+.. figure:: images/listings/installed_whitelisted.png
+   :align: center
+   :class: jp-screenshot
+
+   **Figure:** Whitelisted installed extension which should be removed
+
+.. _listings_conf:
+
+Listing Configuration
+^^^^^^^^^^^^^^^^^^^^^
+
+You or your administrator can use the following traits to define the listings loading.
+
+- ``blacklist_uris``: A list of comma-separated URIs to get the blacklist
+- ``whitelist_uris``: A list of comma-separated URIs to get the whitelist
+- ``listings_refresh_seconds``: The interval delay in seconds to refresh the lists
+- ``listings_request_options``: The optional kwargs to use for the listings HTTP requests
+
+For example, to enable blacklist, launch the server with ``--LabServerApp.blacklist_uris``.
+
+The details for the listings_request_options are listed
+on the `this page <https://2.python-requests.org/en/v2.7.0/api/#requests.request>`__  
+(for example, you could pass ``{'timeout': 10}`` to change the HTTP request timeout value).
+
+The listings are json files hosted on the URIs you have given.
+
+For each entry, you have to define the `name` of the extension as published in the NPM registry.
+The ``name`` attribute support regular expressions.
+
+Optionally, you can also add some more fields for your records (``type``, ``reason``, ``creation_date``,
+``last_update_date``). These optional fields are not used in the user interface.
+
+This is an example of a blacklist file.
+
+.. code:: json
+
+   {
+   "blacklist": [
+      {
+         "name": "@jupyterlab-examples/launcher",
+         "type": "jupyterlab",
+         "reason": "@jupyterlab-examples/launcher is blacklisted for test purpose - Do NOT take this for granted!!!",
+         "creation_date": "2020-03-11T03:28:56.782Z",
+         "last_update_date":  "2020-03-11T03:28:56.782Z"
+      }
+   ]
+   }
+
+
+In the following whitelist example a ``@jupyterlab/*`` will whitelist 
+all jupyterlab organization extensions.
+
+.. code:: json
+
+   {
+   "whitelist": [
+      {
+         "name": "@jupyterlab/*",
+         "type": "jupyterlab",
+         "reason": "All @jupyterlab org extensions are whitelisted, of course...",
+         "creation_date": "2020-03-11T03:28:56.782Z",
+         "last_update_date":  "2020-03-11T03:28:56.782Z"
+      }
+   ]
+   }
+
 
 
 Using the Terminal
@@ -85,8 +406,9 @@ using the ``jupyter labextension`` entry point. In general, a simple help text
 is available by typing ``jupyter labextension --help``.
 
 
-Installing Built-in Extensions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Installing Extensions
+^^^^^^^^^^^^^^^^^^^^^
+
 
 You can install new extensions into the application
 using the command:

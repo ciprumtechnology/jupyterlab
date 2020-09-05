@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/mathjax2",
-  "version": "3.0.0-beta.1",
+  "version": "2.1.0",
   "description": "A MathJax 2 Typesetting provider for JupyterLab",
   "homepage": "https://github.com/jupyterlab/jupyterlab",
   "bugs": {
@@ -12,6 +12,10 @@
   },
   "license": "BSD-3-Clause",
   "author": "Project Jupyter",
+  "files": [
+    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
+    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
+  ],
   "sideEffects": [
     "style/**/*"
   ],
@@ -21,25 +25,21 @@
   "directories": {
     "lib": "lib/"
   },
-  "files": [
-    "lib/**/*.{d.ts,eot,gif,html,jpg,js,js.map,json,png,svg,woff2,ttf}",
-    "style/**/*.{css,eot,gif,html,jpg,json,png,svg,woff2,ttf}"
-  ],
   "scripts": {
     "build": "tsc -b",
-    "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
+    "clean": "rimraf lib",
     "docs": "typedoc src",
     "prepublishOnly": "npm run build",
     "watch": "tsc -b --watch"
   },
   "dependencies": {
-    "@jupyterlab/rendermime-interfaces": "^3.0.0-beta.1",
-    "@lumino/coreutils": "^1.5.3"
+    "@jupyterlab/rendermime-interfaces": "^2.1.0",
+    "@lumino/coreutils": "^1.4.2"
   },
   "devDependencies": {
     "rimraf": "~3.0.0",
-    "typedoc": "0.17.0-3",
-    "typescript": "~4.0.2"
+    "typedoc": "^0.15.4",
+    "typescript": "~3.7.3"
   },
   "publishConfig": {
     "access": "public"

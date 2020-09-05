@@ -11,7 +11,6 @@ import { Dialog, showDialog, ICommandPalette } from '@jupyterlab/apputils';
 import { ExtensionView } from '@jupyterlab/extensionmanager';
 import { IMainMenu } from '@jupyterlab/mainmenu';
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
-import { ITranslator, TranslationBundle } from '@jupyterlab/translation';
 import { extensionIcon } from '@jupyterlab/ui-components';
 
 const PLUGIN_ID = '@jupyterlab/extensionmanager-extension:plugin';
@@ -29,18 +28,16 @@ namespace CommandIDs {
 const plugin: JupyterFrontEndPlugin<void> = {
   id: PLUGIN_ID,
   autoStart: true,
-  requires: [ISettingRegistry, ITranslator],
+  requires: [ISettingRegistry],
   optional: [ILabShell, ILayoutRestorer, IMainMenu, ICommandPalette],
   activate: async (
     app: JupyterFrontEnd,
     registry: ISettingRegistry,
-    translator: ITranslator,
     labShell: ILabShell | null,
     restorer: ILayoutRestorer | null,
     mainMenu: IMainMenu | null,
     palette: ICommandPalette | null
   ) => {
-    const trans = translator.load('jupyterlab');
     const settings = await registry.load(plugin.id);
     let enabled = settings.composite['enabled'] === true;
 
@@ -48,10 +45,10 @@ const plugin: JupyterFrontEndPlugin<void> = {
     let view: ExtensionView | undefined;
 
     const createView = () => {
-      const v = new ExtensionView(app, serviceManager, settings, translator);
+      const v = new ExtensionView(serviceManager, settings);
       v.id = 'extensionmanager.main-view';
       v.title.icon = extensionIcon;
-      v.title.caption = trans.__('Extension Manager');
+      v.title.caption = 'Extension Manager';
       if (restorer) {
         restorer.add(v, v.id);
       }
@@ -70,7 +67,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
         settings.changed.connect(async () => {
           enabled = settings.composite['enabled'] === true;
           if (enabled && (!view || (view && !view.isAttached))) {
-            const accepted = await Private.showWarning(trans);
+            const accepted = await Private.showWarning();
             if (!accepted) {
               void settings.set('enabled', false);
               return;
@@ -90,7 +87,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       });
 
     commands.addCommand(CommandIDs.toggle, {
-      label: trans.__('Enable Extension Manager'),
+      label: 'Enable Extension Manager',
       execute: () => {
         if (registry) {
           void registry.set(plugin.id, 'enabled', !enabled);
@@ -100,7 +97,7 @@ const plugin: JupyterFrontEndPlugin<void> = {
       isEnabled: () => serviceManager.builder.isAvailable
     });
 
-    const category = trans.__('Extension Manager');
+    const category = 'Extension Manager';
     const command = CommandIDs.toggle;
     if (palette) {
       palette.addItem({ command, category });
@@ -126,20 +123,19 @@ namespace Private {
    *
    * @returns whether the user accepted the dialog.
    */
-  export async function showWarning(
-    trans: TranslationBundle
-  ): Promise<boolean> {
+  export async function showWarning(): Promise<boolean> {
     return showDialog({
-      title: trans.__('Enable Extension Manager?'),
-      body: trans.__(`Thanks for trying out JupyterLab's extension manager.
-The JupyterLab development team is excited to have a robust
-third-party extension community.
-However, we cannot vouch for every extension,
-and some may introduce security risks.
-Do you want to continue?`),
+      title: 'Enable Extension Manager?',
+      body:
+        "Thanks for trying out JupyterLab's extension manager. " +
+        'The JupyterLab development team is excited to have a robust ' +
+        'third-party extension community. ' +
+        'However, we cannot vouch for every extension, ' +
+        'and some may introduce security risks. ' +
+        'Do you want to continue?',
       buttons: [
-        Dialog.cancelButton({ label: trans.__('Disable') }),
-        Dialog.warnButton({ label: trans.__('Enable') })
+        Dialog.cancelButton({ label: 'Disable' }),
+        Dialog.warnButton({ label: 'Enable' })
       ]
     }).then(result => {
       return result.button.accept;

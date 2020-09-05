@@ -5,14 +5,6 @@
 
 import pytest
 
-
-pytest_plugins = [
-    'pytest_jupyter_server',
-    'pytest_jupyterlab',
-    'pytest_jupyterlab_server',
-]
-
-
 def pytest_addoption(parser):
     """
     Adds flags for py.test.

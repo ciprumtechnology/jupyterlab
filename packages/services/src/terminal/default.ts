@@ -141,11 +141,11 @@ export class TerminalConnection implements Terminal.ITerminalConnection {
    */
   reconnect(): Promise<void> {
     this._errorIfDisposed();
-    const result = new PromiseDelegate<void>();
+    let result = new PromiseDelegate<void>();
 
     // Set up a listener for the connection status changing, which accepts or
     // rejects after the retries are done.
-    const fulfill = (sender: this, status: Terminal.ConnectionStatus) => {
+    let fulfill = (sender: this, status: Terminal.ConnectionStatus) => {
       if (status === 'connected') {
         result.resolve();
         this.connectionStatusChanged.disconnect(fulfill, this);
@@ -185,7 +185,7 @@ export class TerminalConnection implements Terminal.ITerminalConnection {
       // attemps should pick a random number in a growing range so that we
       // don't overload the server with synchronized reconnection attempts
       // across multiple kernels.
-      const timeout = Private.getRandomIntInclusive(
+      let timeout = Private.getRandomIntInclusive(
         0,
         1e3 * (Math.pow(2, this._reconnectAttempt) - 1)
       );
@@ -265,6 +265,10 @@ export class TerminalConnection implements Terminal.ITerminalConnection {
       encodeURIComponent(name)
     );
 
+    const token = settings.token;
+    if (token !== '') {
+      url = url + `?token=${encodeURIComponent(token)}`;
+    }
     this._ws = new settings.WebSocket(url);
 
     this._ws.onmessage = this._onWSMessage;

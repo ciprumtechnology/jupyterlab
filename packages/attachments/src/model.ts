@@ -145,7 +145,7 @@ export class AttachmentsModel implements IAttachmentsModel {
     this.contentFactory =
       options.contentFactory || AttachmentsModel.defaultContentFactory;
     if (options.values) {
-      for (const key of Object.keys(options.values)) {
+      for (let key of Object.keys(options.values)) {
         if (options.values[key] !== undefined) {
           this.set(key, options.values[key]!);
         }
@@ -238,7 +238,7 @@ export class AttachmentsModel implements IAttachmentsModel {
    */
   set(key: string, value: nbformat.IMimeBundle): void {
     // Normalize stream data.
-    const item = this._createItem({ value });
+    let item = this._createItem({ value });
     this._map.set(key, item);
   }
 
@@ -278,8 +278,8 @@ export class AttachmentsModel implements IAttachmentsModel {
    * Serialize the model to JSON.
    */
   toJSON(): nbformat.IAttachments {
-    const ret: nbformat.IAttachments = {};
-    for (const key of this._map.keys()) {
+    let ret: nbformat.IAttachments = {};
+    for (let key of this._map.keys()) {
       ret[key] = this._map.get(key)!.toJSON();
     }
     return ret;
@@ -289,8 +289,8 @@ export class AttachmentsModel implements IAttachmentsModel {
    * Create an attachment item and hook up its signals.
    */
   private _createItem(options: IAttachmentModel.IOptions): IAttachmentModel {
-    const factory = this.contentFactory;
-    const item = factory.createAttachmentModel(options);
+    let factory = this.contentFactory;
+    let item = factory.createAttachmentModel(options);
     item.changed.connect(this._onGenericChange, this);
     return item;
   }

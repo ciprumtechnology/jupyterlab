@@ -9,43 +9,26 @@ import { Cell } from '@jupyterlab/cells';
 import { notTrustedIcon, trustedIcon } from '@jupyterlab/ui-components';
 
 import { toArray } from '@lumino/algorithm';
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 
 /**
  * Determine the notebook trust status message.
  */
 function cellTrust(
-  props: NotebookTrustComponent.IProps | NotebookTrustStatus.Model,
-  translator?: ITranslator
+  props: NotebookTrustComponent.IProps | NotebookTrustStatus.Model
 ): string[] {
-  translator = translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
-
   if (props.trustedCells === props.totalCells) {
     return [
-      trans.__(
-        'Notebook trusted: %1 of %2 cells trusted.',
-        props.trustedCells,
-        props.totalCells
-      ),
+      `Notebook trusted: ${props.trustedCells} of ${props.totalCells} cells trusted.`,
       'jp-StatusItem-trusted'
     ];
   } else if (props.activeCellTrusted) {
     return [
-      trans.__(
-        'Active cell trusted: %1 of %2 cells trusted.',
-        props.trustedCells,
-        props.totalCells
-      ),
+      `Active cell trusted: ${props.trustedCells} of ${props.totalCells} cells trusted. `,
       'jp-StatusItem-trusted'
     ];
   } else {
     return [
-      trans.__(
-        'Notebook not trusted: %1 of %2 cells trusted.',
-        props.trustedCells,
-        props.totalCells
-      ),
+      `Notebook not trusted: ${props.trustedCells} of ${props.totalCells} cells trusted.`,
       'jp-StatusItem-untrusted'
     ];
   }
@@ -107,9 +90,8 @@ export class NotebookTrustStatus extends VDomRenderer<
   /**
    * Construct a new status item.
    */
-  constructor(translator?: ITranslator) {
+  constructor() {
     super(new NotebookTrustStatus.Model());
-    this.translator = translator || nullTranslator;
   }
 
   /**
@@ -119,7 +101,7 @@ export class NotebookTrustStatus extends VDomRenderer<
     if (!this.model) {
       return null;
     }
-    this.node.title = cellTrust(this.model, this.translator)[0];
+    this.node.title = cellTrust(this.model)[0];
     return (
       <div>
         <NotebookTrustComponent
@@ -131,8 +113,6 @@ export class NotebookTrustStatus extends VDomRenderer<
       </div>
     );
   }
-
-  translator: ITranslator;
 }
 
 /**
@@ -247,9 +227,9 @@ export namespace NotebookTrustStatus {
       if (model === null) {
         return { total: 0, trusted: 0 };
       }
-      const cells = toArray(model.cells);
+      let cells = toArray(model.cells);
 
-      const trusted = cells.reduce((accum, current) => {
+      let trusted = cells.reduce((accum, current) => {
         if (current.trusted) {
           return accum + 1;
         } else {
@@ -257,7 +237,7 @@ export namespace NotebookTrustStatus {
         }
       }, 0);
 
-      const total = cells.length;
+      let total = cells.length;
 
       return {
         total,

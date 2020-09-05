@@ -22,11 +22,6 @@ import * as React from 'react';
 
 import { ISessionContext, sessionContextDialogs } from './sessioncontext';
 import { UseSignal, ReactWidget } from './vdom';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 
 /**
  * The class name added to toolbars.
@@ -75,10 +70,8 @@ class ToolbarLayout extends PanelLayout {
       // accommodate them.
       if (some(this.widgets, w => !w.isHidden)) {
         this.parent!.node.style.minHeight = 'var(--jp-private-toolbar-height)';
-        this.parent!.removeClass('jp-Toolbar-micro');
       } else {
         this.parent!.node.style.minHeight = '';
-        this.parent!.addClass('jp-Toolbar-micro');
       }
     }
 
@@ -185,7 +178,6 @@ export class Toolbar<T extends Widget = Widget> extends Widget {
   constructor() {
     super();
     this.addClass(TOOLBAR_CLASS);
-    this.addClass('jp-scrollbar-tiny');
     this.layout = new ToolbarLayout();
   }
 
@@ -195,7 +187,7 @@ export class Toolbar<T extends Widget = Widget> extends Widget {
    * @returns An iterator over the toolbar item names.
    */
   names(): IIterator<string> {
-    const layout = this.layout as ToolbarLayout;
+    let layout = this.layout as ToolbarLayout;
     return map(layout.widgets, widget => {
       return Private.nameProperty.get(widget);
     });
@@ -217,7 +209,7 @@ export class Toolbar<T extends Widget = Widget> extends Widget {
    * The item can be removed from the toolbar by setting its parent to `null`.
    */
   addItem(name: string, widget: T): boolean {
-    const layout = this.layout as ToolbarLayout;
+    let layout = this.layout as ToolbarLayout;
     return this.insertItem(layout.widgets.length, name, widget);
   }
 
@@ -238,12 +230,12 @@ export class Toolbar<T extends Widget = Widget> extends Widget {
    * The item can be removed from the toolbar by setting its parent to `null`.
    */
   insertItem(index: number, name: string, widget: T): boolean {
-    const existing = find(this.names(), value => value === name);
+    let existing = find(this.names(), value => value === name);
     if (existing) {
       return false;
     }
     widget.addClass(TOOLBAR_ITEM_CLASS);
-    const layout = this.layout as ToolbarLayout;
+    let layout = this.layout as ToolbarLayout;
     layout.insertWidget(index, widget);
     Private.nameProperty.set(widget, name);
     return true;
@@ -295,10 +287,10 @@ export class Toolbar<T extends Widget = Widget> extends Widget {
     name: string,
     widget: T
   ): boolean {
-    const nameWithIndex = map(this.names(), (name, i) => {
+    let nameWithIndex = map(this.names(), (name, i) => {
       return { name: name, index: i };
     });
-    const target = find(nameWithIndex, x => x.name === at);
+    let target = find(nameWithIndex, x => x.name === at);
     if (target) {
       return this.insertItem(target.index + offset, name, widget);
     }
@@ -372,17 +364,14 @@ export namespace Toolbar {
    * Create an interrupt toolbar item.
    */
   export function createInterruptButton(
-    sessionContext: ISessionContext,
-    translator?: ITranslator
+    sessionContext: ISessionContext
   ): Widget {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
     return new ToolbarButton({
       icon: stopIcon,
       onClick: () => {
         void sessionContext.session?.kernel?.interrupt();
       },
-      tooltip: trans.__('Interrupt the kernel')
+      tooltip: 'Interrupt the kernel'
     });
   }
 
@@ -391,20 +380,14 @@ export namespace Toolbar {
    */
   export function createRestartButton(
     sessionContext: ISessionContext,
-    dialogs?: ISessionContext.IDialogs,
-    translator?: ITranslator
+    dialogs?: ISessionContext.IDialogs
   ): Widget {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
     return new ToolbarButton({
       icon: refreshIcon,
       onClick: () => {
-        void (dialogs ?? sessionContextDialogs).restart(
-          sessionContext,
-          translator
-        );
+        void (dialogs ?? sessionContextDialogs).restart(sessionContext);
       },
-      tooltip: trans.__('Restart the kernel')
+      tooltip: 'Restart the kernel'
     });
   }
 
@@ -428,14 +411,12 @@ export namespace Toolbar {
    */
   export function createKernelNameItem(
     sessionContext: ISessionContext,
-    dialogs?: ISessionContext.IDialogs,
-    translator?: ITranslator
+    dialogs?: ISessionContext.IDialogs
   ): Widget {
     const el = ReactWidget.create(
       <Private.KernelNameComponent
         sessionContext={sessionContext}
         dialogs={dialogs ?? sessionContextDialogs}
-        translator={translator}
       />
     );
     el.addClass('jp-KernelName');
@@ -451,10 +432,9 @@ export namespace Toolbar {
    * It can handle a change to the context or the kernel.
    */
   export function createKernelStatusItem(
-    sessionContext: ISessionContext,
-    translator?: ITranslator
+    sessionContext: ISessionContext
   ): Widget {
-    return new Private.KernelStatus(sessionContext, translator);
+    return new Private.KernelStatus(sessionContext);
   }
 }
 
@@ -474,19 +454,6 @@ export namespace ToolbarButtonComponent {
     tooltip?: string;
     onClick?: () => void;
     enabled?: boolean;
-
-    /**
-     * Trigger the button on the actual onClick event rather than onMouseDown.
-     *
-     * See note in ToolbarButtonComponent below as to why the default is to
-     * trigger on onMouseDown.
-     */
-    actualOnClick?: boolean;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -515,12 +482,6 @@ export function ToolbarButtonComponent(props: ToolbarButtonComponent.IProps) {
     }
   };
 
-  const handleClick = (event: React.MouseEvent) => {
-    if (event.button === 0) {
-      props.onClick?.();
-    }
-  };
-
   return (
     <Button
       className={
@@ -529,10 +490,7 @@ export function ToolbarButtonComponent(props: ToolbarButtonComponent.IProps) {
           : 'jp-ToolbarButtonComponent'
       }
       disabled={props.enabled === false}
-      onClick={props.actualOnClick ?? false ? handleClick : undefined}
-      onMouseDown={
-        !(props.actualOnClick ?? false) ? handleMouseDown : undefined
-      }
+      onMouseDown={handleMouseDown}
       onKeyDown={handleKeyDown}
       title={props.tooltip || props.iconLabel}
       minimal
@@ -651,7 +609,7 @@ namespace Private {
   export function propsFromCommand(
     options: CommandToolbarButtonComponent.IProps
   ): ToolbarButtonComponent.IProps {
-    const { commands, id, args } = options;
+    let { commands, id, args } = options;
 
     const iconClass = commands.iconClass(id, args);
     const iconLabel = commands.iconLabel(id, args);
@@ -716,7 +674,6 @@ namespace Private {
     export interface IProps {
       sessionContext: ISessionContext;
       dialogs: ISessionContext.IDialogs;
-      translator?: ITranslator;
     }
   }
 
@@ -728,10 +685,8 @@ namespace Private {
    */
 
   export function KernelNameComponent(props: KernelNameComponent.IProps) {
-    const translator = props.translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
     const callback = () => {
-      void props.dialogs.selectKernel(props.sessionContext, translator);
+      void props.dialogs.selectKernel(props.sessionContext);
     };
     return (
       <UseSignal
@@ -742,7 +697,7 @@ namespace Private {
           <ToolbarButtonComponent
             className={TOOLBAR_KERNEL_NAME_CLASS}
             onClick={callback}
-            tooltip={trans.__('Switch kernel')}
+            tooltip={'Switch kernel'}
             label={sessionContext?.kernelDisplayName}
           />
         )}
@@ -757,10 +712,8 @@ namespace Private {
     /**
      * Construct a new kernel status widget.
      */
-    constructor(sessionContext: ISessionContext, translator?: ITranslator) {
+    constructor(sessionContext: ISessionContext) {
       super();
-      this.translator = translator || nullTranslator;
-      this._trans = this.translator.load('jupyterlab');
       this.addClass(TOOLBAR_KERNEL_STATUS_CLASS);
       this._onStatusChanged(sessionContext);
       sessionContext.statusChanged.connect(this._onStatusChanged, this);
@@ -774,26 +727,22 @@ namespace Private {
         return;
       }
 
-      const status = sessionContext.kernelDisplayStatus;
+      let status = sessionContext.kernelDisplayStatus;
 
       // set the icon
       if (this._isBusy(status)) {
         circleIcon.element({
           container: this.node,
-          title: this._trans.__('Kernel %1', Text.titleCase(status)),
+          title: `Kernel ${Text.titleCase(status)}`,
 
-          stylesheet: 'toolbarButton',
-          alignSelf: 'normal',
-          height: '24px'
+          stylesheet: 'toolbarButton'
         });
       } else {
         circleEmptyIcon.element({
           container: this.node,
-          title: this._trans.__('Kernel %1', Text.titleCase(status)),
+          title: `Kernel ${Text.titleCase(status)}`,
 
-          stylesheet: 'toolbarButton',
-          alignSelf: 'normal',
-          height: '24px'
+          stylesheet: 'toolbarButton'
         });
       }
     }
@@ -803,15 +752,8 @@ namespace Private {
      */
     private _isBusy(status: ISessionContext.KernelDisplayStatus): boolean {
       return (
-        status === 'busy' ||
-        status === 'starting' ||
-        status === 'terminating' ||
-        status === 'restarting' ||
-        status === 'initializing'
+        status === 'busy' || status === 'starting' || status === 'restarting'
       );
     }
-
-    protected translator: ITranslator;
-    private _trans: TranslationBundle;
   }
 }

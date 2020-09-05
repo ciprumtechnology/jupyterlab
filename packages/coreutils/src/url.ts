@@ -18,7 +18,7 @@ export namespace URLExt {
    */
   export function parse(url: string): IUrl {
     if (typeof document !== 'undefined' && document) {
-      const a = document.createElement('a');
+      let a = document.createElement('a');
       a.href = url;
       return a;
     }

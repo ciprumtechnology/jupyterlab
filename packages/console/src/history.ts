@@ -99,7 +99,7 @@ export class ConsoleHistory implements IConsoleHistory {
       return;
     }
 
-    const prev = this._editor;
+    let prev = this._editor;
     if (prev) {
       prev.edgeRequested.disconnect(this.onEdgeRequest, this);
       prev.model.value.changed.disconnect(this.onTextChange, this);
@@ -156,7 +156,7 @@ export class ConsoleHistory implements IConsoleHistory {
 
     --this._cursor;
     this._cursor = Math.max(0, this._cursor);
-    const content = this._filtered[this._cursor];
+    let content = this._filtered[this._cursor];
     return Promise.resolve(content);
   }
 
@@ -180,7 +180,7 @@ export class ConsoleHistory implements IConsoleHistory {
 
     ++this._cursor;
     this._cursor = Math.min(this._filtered.length - 1, this._cursor);
-    const content = this._filtered[this._cursor];
+    let content = this._filtered[this._cursor];
     return Promise.resolve(content);
   }
 
@@ -254,8 +254,8 @@ export class ConsoleHistory implements IConsoleHistory {
     editor: CodeEditor.IEditor,
     location: CodeEditor.EdgeLocation
   ): void {
-    const model = editor.model;
-    const source = model.value.text;
+    let model = editor.model;
+    let source = model.value.text;
 
     if (location === 'top' || location === 'topLine') {
       void this.back(source).then(value => {
@@ -279,13 +279,13 @@ export class ConsoleHistory implements IConsoleHistory {
         if (this.isDisposed) {
           return;
         }
-        const text = value || this.placeholder;
+        let text = value || this.placeholder;
         if (model.value.text === text) {
           return;
         }
         this._setByHistory = true;
         model.value.text = text;
-        const pos = editor.getPositionAt(text.length);
+        let pos = editor.getPositionAt(text.length);
         if (pos) {
           editor.setCursorPosition(pos);
         }
@@ -297,7 +297,7 @@ export class ConsoleHistory implements IConsoleHistory {
    * Handle the current kernel changing.
    */
   private async _handleKernel(): Promise<void> {
-    const kernel = this.sessionContext.session?.kernel;
+    let kernel = this.sessionContext.session?.kernel;
     if (!kernel) {
       this._history.length = 0;
       return;

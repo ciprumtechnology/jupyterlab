@@ -45,8 +45,6 @@ import { IMainMenu } from '@jupyterlab/mainmenu';
 
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
-import { ITranslator } from '@jupyterlab/translation';
-
 import { Title, Widget } from '@lumino/widgets';
 
 export const STATUSBAR_PLUGIN_ID = '@jupyterlab/statusbar-extension:plugin';
@@ -56,18 +54,15 @@ export const STATUSBAR_PLUGIN_ID = '@jupyterlab/statusbar-extension:plugin';
  */
 const statusBar: JupyterFrontEndPlugin<IStatusBar> = {
   id: STATUSBAR_PLUGIN_ID,
-  requires: [ITranslator],
   provides: IStatusBar,
   autoStart: true,
   activate: (
     app: JupyterFrontEnd,
-    translator: ITranslator,
     labShell: ILabShell | null,
     settingRegistry: ISettingRegistry | null,
     mainMenu: IMainMenu | null,
     palette: ICommandPalette | null
   ) => {
-    const trans = translator.load('jupyterlab');
     const statusBar = new StatusBar();
     statusBar.id = 'jp-main-statusbar';
     app.shell.add(statusBar, 'bottom');
@@ -79,11 +74,11 @@ const statusBar: JupyterFrontEndPlugin<IStatusBar> = {
       });
     }
 
-    const category: string = trans.__('Main Area');
+    const category: string = 'Main Area';
     const command: string = 'statusbar:toggle';
 
     app.commands.addCommand(command, {
-      label: trans.__('Show Status Bar'),
+      label: 'Show Status Bar',
       execute: (args: any) => {
         statusBar.setHidden(statusBar.isVisible);
         if (settingRegistry) {
@@ -104,15 +99,13 @@ const statusBar: JupyterFrontEndPlugin<IStatusBar> = {
       mainMenu.viewMenu.addGroup([{ command }], 1);
     }
 
-    let ready = app.restored;
     if (settingRegistry) {
-      const loadSettings = settingRegistry.load(STATUSBAR_PLUGIN_ID);
       const updateSettings = (settings: ISettingRegistry.ISettings): void => {
         const visible = settings.get('visible').composite as boolean;
         statusBar.setHidden(!visible);
       };
 
-      ready = Promise.all([loadSettings, app.restored])
+      Promise.all([settingRegistry.load(STATUSBAR_PLUGIN_ID), app.restored])
         .then(([settings]) => {
           updateSettings(settings);
           settings.changed.connect(settings => {
@@ -123,19 +116,6 @@ const statusBar: JupyterFrontEndPlugin<IStatusBar> = {
           console.error(reason.message);
         });
     }
-
-    // Hide the status bar in the mobile format.
-    void ready.then(() => {
-      const handleFormat = () => {
-        if (app.format === 'mobile') {
-          statusBar.setHidden(true);
-        } else {
-          statusBar.setHidden(false);
-        }
-      };
-      app.formatChanged.connect(handleFormat);
-      handleFormat();
-    });
 
     return statusBar;
   },
@@ -148,13 +128,7 @@ const statusBar: JupyterFrontEndPlugin<IStatusBar> = {
 export const kernelStatus: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/statusbar-extension:kernel-status',
   autoStart: true,
-  requires: [
-    IStatusBar,
-    INotebookTracker,
-    IConsoleTracker,
-    ILabShell,
-    ITranslator
-  ],
+  requires: [IStatusBar, INotebookTracker, IConsoleTracker, ILabShell],
   optional: [ISessionContextDialogs],
   activate: (
     app: JupyterFrontEnd,
@@ -162,7 +136,6 @@ export const kernelStatus: JupyterFrontEndPlugin<void> = {
     notebookTracker: INotebookTracker,
     consoleTracker: IConsoleTracker,
     labShell: ILabShell,
-    translator: ITranslator,
     sessionDialogs: ISessionContextDialogs | null
   ) => {
     // When the status item is clicked, launch the kernel
@@ -173,13 +146,14 @@ export const kernelStatus: JupyterFrontEndPlugin<void> = {
         return;
       }
       await (sessionDialogs || sessionContextDialogs).selectKernel(
-        currentSession,
-        translator
+        currentSession
       );
     };
 
     // Create the status item.
-    const item = new KernelStatus({ onClick: changeKernel }, translator);
+    const item = new KernelStatus({
+      onClick: changeKernel
+    });
 
     // When the title of the active widget changes, update the label
     // of the hover text.
@@ -240,8 +214,7 @@ export const lineColItem: JupyterFrontEndPlugin<void> = {
     INotebookTracker,
     IEditorTracker,
     IConsoleTracker,
-    ILabShell,
-    ITranslator
+    ILabShell
   ],
   activate: (
     _: JupyterFrontEnd,
@@ -249,10 +222,9 @@ export const lineColItem: JupyterFrontEndPlugin<void> = {
     notebookTracker: INotebookTracker,
     editorTracker: IEditorTracker,
     consoleTracker: IConsoleTracker,
-    labShell: ILabShell,
-    translator: ITranslator
+    labShell: ILabShell
   ) => {
-    const item = new LineCol(translator);
+    const item = new LineCol();
 
     const onActiveCellChanged = (notebook: Notebook, cell: Cell) => {
       item.model!.editor = cell && cell.editor;
@@ -330,13 +302,9 @@ export const lineColItem: JupyterFrontEndPlugin<void> = {
 export const memoryUsageItem: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/statusbar-extension:memory-usage-status',
   autoStart: true,
-  requires: [IStatusBar, ITranslator],
-  activate: (
-    app: JupyterFrontEnd,
-    statusBar: IStatusBar,
-    translator: ITranslator
-  ) => {
-    const item = new MemoryUsage(translator);
+  requires: [IStatusBar],
+  activate: (app: JupyterFrontEnd, statusBar: IStatusBar) => {
+    let item = new MemoryUsage();
 
     statusBar.registerStatusItem(
       '@jupyterlab/statusbar-extension:memory-usage-status',
@@ -358,16 +326,11 @@ export const memoryUsageItem: JupyterFrontEndPlugin<void> = {
 export const runningSessionsItem: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/statusbar-extension:running-sessions-status',
   autoStart: true,
-  requires: [IStatusBar, ITranslator],
-  activate: (
-    app: JupyterFrontEnd,
-    statusBar: IStatusBar,
-    translator: ITranslator
-  ) => {
+  requires: [IStatusBar],
+  activate: (app: JupyterFrontEnd, statusBar: IStatusBar) => {
     const item = new RunningSessions({
       onClick: () => app.shell.activateById('jp-running-sessions'),
-      serviceManager: app.serviceManager,
-      translator
+      serviceManager: app.serviceManager
     });
 
     statusBar.registerStatusItem(

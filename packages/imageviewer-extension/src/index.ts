@@ -9,15 +9,13 @@ import {
 
 import { ICommandPalette, WidgetTracker } from '@jupyterlab/apputils';
 
-import { IDocumentWidget, DocumentRegistry } from '@jupyterlab/docregistry';
+import { IDocumentWidget } from '@jupyterlab/docregistry';
 
 import {
   ImageViewer,
   ImageViewerFactory,
   IImageTracker
 } from '@jupyterlab/imageviewer';
-
-import { ITranslator } from '@jupyterlab/translation';
 
 /**
  * The command IDs used by the image widget plugin.
@@ -43,27 +41,12 @@ namespace CommandIDs {
 /**
  * The list of file types for images.
  */
-const FILE_TYPES = ['png', 'gif', 'jpeg', 'bmp', 'ico', 'tiff'];
+const FILE_TYPES = ['png', 'gif', 'jpeg', 'svg', 'bmp', 'ico', 'xbm', 'tiff'];
 
 /**
  * The name of the factory that creates image widgets.
  */
 const FACTORY = 'Image';
-
-/**
- * The name of the factory that creates image widgets.
- */
-const TEXT_FACTORY = 'Image (Text)';
-
-/**
- * The list of file types for images with optional text modes.
- */
-const TEXT_FILE_TYPES = ['svg', 'xbm'];
-
-/**
- * The test pattern for text file types in paths.
- */
-const TEXT_FILE_REGEX = new RegExp(`\.(${TEXT_FILE_TYPES.join('|')})$`);
 
 /**
  * The image file handler extension.
@@ -72,7 +55,6 @@ const plugin: JupyterFrontEndPlugin<IImageTracker> = {
   activate,
   id: '@jupyterlab/imageviewer-extension:plugin',
   provides: IImageTracker,
-  requires: [ITranslator],
   optional: [ICommandPalette, ILayoutRestorer],
   autoStart: true
 };
@@ -87,17 +69,33 @@ export default plugin;
  */
 function activate(
   app: JupyterFrontEnd,
-  translator: ITranslator,
   palette: ICommandPalette | null,
   restorer: ILayoutRestorer | null
 ): IImageTracker {
-  const trans = translator.load('jupyterlab');
   const namespace = 'image-widget';
+  const factory = new ImageViewerFactory({
+    name: FACTORY,
+    modelName: 'base64',
+    fileTypes: FILE_TYPES,
+    defaultFor: FILE_TYPES,
+    readOnly: true
+  });
+  const tracker = new WidgetTracker<IDocumentWidget<ImageViewer>>({
+    namespace
+  });
 
-  function onWidgetCreated(
-    sender: any,
-    widget: IDocumentWidget<ImageViewer, DocumentRegistry.IModel>
-  ) {
+  if (restorer) {
+    // Handle state restoration.
+    void restorer.restore(tracker, {
+      command: 'docmanager:open',
+      args: widget => ({ path: widget.context.path, factory: FACTORY }),
+      name: widget => widget.context.path
+    });
+  }
+
+  app.docRegistry.addWidgetFactory(factory);
+
+  factory.widgetCreated.connect((sender, widget) => {
     // Notify the widget tracker if restore data needs to update.
     widget.context.pathChanged.connect(() => {
       void tracker.save(widget);
@@ -111,51 +109,12 @@ function activate(
       widget.title.iconClass = types[0].iconClass ?? '';
       widget.title.iconLabel = types[0].iconLabel ?? '';
     }
-  }
-
-  const factory = new ImageViewerFactory({
-    name: FACTORY,
-    modelName: 'base64',
-    fileTypes: [...FILE_TYPES, ...TEXT_FILE_TYPES],
-    defaultFor: FILE_TYPES,
-    readOnly: true
   });
 
-  const textFactory = new ImageViewerFactory({
-    name: TEXT_FACTORY,
-    modelName: 'text',
-    fileTypes: TEXT_FILE_TYPES,
-    defaultFor: TEXT_FILE_TYPES,
-    readOnly: true
-  });
-
-  [factory, textFactory].forEach(factory => {
-    app.docRegistry.addWidgetFactory(factory);
-    factory.widgetCreated.connect(onWidgetCreated);
-  });
-
-  const tracker = new WidgetTracker<IDocumentWidget<ImageViewer>>({
-    namespace
-  });
-
-  if (restorer) {
-    // Handle state restoration.
-    void restorer.restore(tracker, {
-      command: 'docmanager:open',
-      args: widget => ({
-        path: widget.context.path,
-        factory: TEXT_FILE_REGEX.test(widget.context.path)
-          ? TEXT_FACTORY
-          : FACTORY
-      }),
-      name: widget => widget.context.path
-    });
-  }
-
-  addCommands(app, tracker, translator);
+  addCommands(app, tracker);
 
   if (palette) {
-    const category = trans.__('Image Viewer');
+    const category = 'Image Viewer';
     [
       CommandIDs.zoomIn,
       CommandIDs.zoomOut,
@@ -176,12 +135,7 @@ function activate(
 /**
  * Add the commands for the image widget.
  */
-export function addCommands(
-  app: JupyterFrontEnd,
-  tracker: IImageTracker,
-  translator: ITranslator
-) {
-  const trans = translator.load('jupyterlab');
+export function addCommands(app: JupyterFrontEnd, tracker: IImageTracker) {
   const { commands, shell } = app;
 
   /**
@@ -196,49 +150,49 @@ export function addCommands(
 
   commands.addCommand('imageviewer:zoom-in', {
     execute: zoomIn,
-    label: trans.__('Zoom In'),
+    label: 'Zoom In',
     isEnabled
   });
 
   commands.addCommand('imageviewer:zoom-out', {
     execute: zoomOut,
-    label: trans.__('Zoom Out'),
+    label: 'Zoom Out',
     isEnabled
   });
 
   commands.addCommand('imageviewer:reset-image', {
     execute: resetImage,
-    label: trans.__('Reset Image'),
+    label: 'Reset Image',
     isEnabled
   });
 
   commands.addCommand('imageviewer:rotate-clockwise', {
     execute: rotateClockwise,
-    label: trans.__('Rotate Clockwise'),
+    label: 'Rotate Clockwise',
     isEnabled
   });
 
   commands.addCommand('imageviewer:rotate-counterclockwise', {
     execute: rotateCounterclockwise,
-    label: trans.__('Rotate Counterclockwise'),
+    label: 'Rotate Counterclockwise',
     isEnabled
   });
 
   commands.addCommand('imageviewer:flip-horizontal', {
     execute: flipHorizontal,
-    label: trans.__('Flip image horizontally'),
+    label: 'Flip image horizontally',
     isEnabled
   });
 
   commands.addCommand('imageviewer:flip-vertical', {
     execute: flipVertical,
-    label: trans.__('Flip image vertically'),
+    label: 'Flip image vertically',
     isEnabled
   });
 
   commands.addCommand('imageviewer:invert-colors', {
     execute: invertColors,
-    label: trans.__('Invert Colors'),
+    label: 'Invert Colors',
     isEnabled
   });
 

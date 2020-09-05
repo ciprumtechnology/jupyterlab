@@ -1,6 +1,8 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
+import { KernelMessage } from '@jupyterlab/services';
+
 import {
   ISessionContext,
   Clipboard,
@@ -13,15 +15,10 @@ import {
   ICodeCellModel,
   CodeCell,
   Cell,
-  MarkdownCell,
-  isMarkdownCellModel,
-  isRawCellModel,
-  isCodeCellModel
+  MarkdownCell
 } from '@jupyterlab/cells';
 
 import * as nbformat from '@jupyterlab/nbformat';
-
-import { KernelMessage } from '@jupyterlab/services';
 
 import { ArrayExt, each, toArray } from '@lumino/algorithm';
 
@@ -36,7 +33,21 @@ import * as React from 'react';
 import { INotebookModel } from './model';
 
 import { Notebook } from './widget';
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
+
+// The message to display to the user when prompting to trust the notebook.
+const TRUST_MESSAGE = (
+  <p>
+    A trusted Jupyter notebook may execute hidden malicious code when you open
+    it.
+    <br />
+    Selecting trust will re-render this notebook in a trusted state.
+    <br />
+    For more information, see the
+    <a href="https://jupyter-notebook.readthedocs.io/en/stable/security.html">
+      Jupyter security documentation
+    </a>
+  </p>
+);
 
 /**
  * The mimetype used for Jupyter cell data.
@@ -69,9 +80,7 @@ export class NotebookActions {
    * standalone class is because at run time, the `Private.executed` variable
    * does not yet exist, so it needs to be referenced via a getter.
    */
-  private constructor() {
-    // Intentionally empty.
-  }
+  private constructor() {}
 }
 
 /**
@@ -108,13 +117,13 @@ export namespace NotebookActions {
     const selections = editor.getSelections();
     const orig = child.model.value.text;
 
-    const offsets = [0];
+    let offsets = [0];
 
     for (let i = 0; i < selections.length; i++) {
       // append start and end to handle selections
       // cursors will have same start and end
-      const start = editor.getOffsetAt(selections[i].start);
-      const end = editor.getOffsetAt(selections[i].end);
+      let start = editor.getOffsetAt(selections[i].start);
+      let end = editor.getOffsetAt(selections[i].end);
       if (start < end) {
         offsets.push(start);
         offsets.push(end);
@@ -128,9 +137,9 @@ export namespace NotebookActions {
 
     offsets.push(orig.length);
 
-    const clones: ICellModel[] = [];
+    let clones: ICellModel[] = [];
     for (let i = 0; i + 1 < offsets.length; i++) {
-      const clone = Private.cloneCell(nbModel, child.model);
+      let clone = Private.cloneCell(nbModel, child.model);
       clones.push(clone);
     }
 
@@ -185,7 +194,6 @@ export namespace NotebookActions {
     const cells = model.cells;
     const primary = notebook.activeCell;
     const active = notebook.activeCellIndex;
-    const attachments: nbformat.IAttachments = {};
 
     // Get the cells to merge.
     notebook.widgets.forEach((child, index) => {
@@ -193,13 +201,6 @@ export namespace NotebookActions {
         toMerge.push(child.model.value.text);
         if (index !== active) {
           toDelete.push(child.model);
-        }
-        // Collect attachments if the cell is a markdown cell or a raw cell
-        const model = child.model;
-        if (isRawCellModel(model) || isMarkdownCellModel(model)) {
-          for (const key of model.attachments.keys) {
-            attachments[key] = model.attachments.get(key)!.toJSON();
-          }
         }
       }
     });
@@ -224,10 +225,8 @@ export namespace NotebookActions {
     const newModel = Private.cloneCell(model, primary.model);
 
     newModel.value.text = toMerge.join('\n\n');
-    if (isCodeCellModel(newModel)) {
-      newModel.outputs.clear();
-    } else if (isMarkdownCellModel(newModel) || isRawCellModel(newModel)) {
-      newModel.attachments.fromJSON(attachments);
+    if (newModel.type === 'code') {
+      (newModel as ICodeCellModel).outputs.clear();
     }
 
     // Make the changes while preserving history.
@@ -265,7 +264,7 @@ export namespace NotebookActions {
     const state = Private.getState(notebook);
 
     Private.deleteCells(notebook);
-    Private.handleState(notebook, state, true);
+    Private.handleState(notebook, state);
   }
 
   /**
@@ -927,7 +926,7 @@ export namespace NotebookActions {
       case 'above':
         index = notebook.activeCellIndex - 1;
         break;
-      case 'replace': {
+      case 'replace':
         // Find the cells to delete.
         const toDelete: number[] = [];
 
@@ -948,7 +947,6 @@ export namespace NotebookActions {
         }
         index = toDelete[0];
         break;
-      }
       default:
         break;
     }
@@ -1367,13 +1365,7 @@ export namespace NotebookActions {
    * #### Notes
    * No dialog will be presented if the notebook is already trusted.
    */
-  export function trust(
-    notebook: Notebook,
-    translator?: ITranslator
-  ): Promise<void> {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
-
+  export function trust(notebook: Notebook): Promise<void> {
     if (!notebook.model) {
       return Promise.resolve();
     }
@@ -1381,38 +1373,18 @@ export namespace NotebookActions {
 
     const cells = toArray(notebook.model.cells);
     const trusted = cells.every(cell => cell.trusted);
-    // FIXME
-    const trustMessage = (
-      <p>
-        {trans.__(
-          'A trusted Jupyter notebook may execute hidden malicious code when you openit.'
-        )}
-        <br />
-        {trans.__(
-          'Selecting trust will re-render this notebook in a trusted state.'
-        )}
-        <br />
-        {trans.__(
-          'For more information, see the <a href="https://jupyter-server.readthedocs.io/en/stable/operators/security.html">%1</a>',
-          trans.__('Jupyter security documentation')
-        )}
-      </p>
-    );
 
     if (trusted) {
       return showDialog({
-        body: trans.__('Notebook is already trusted'),
-        buttons: [Dialog.okButton({ label: trans.__('Ok') })]
+        body: 'Notebook is already trusted',
+        buttons: [Dialog.okButton()]
       }).then(() => undefined);
     }
 
     return showDialog({
-      body: trustMessage,
-      title: trans.__('Trust this notebook?'),
-      buttons: [
-        Dialog.cancelButton({ label: trans.__('Cancel') }),
-        Dialog.warnButton({ label: trans.__('Ok') })
-      ] // FIXME?
+      body: TRUST_MESSAGE,
+      title: 'Trust this notebook?',
+      buttons: [Dialog.cancelButton(), Dialog.warnButton()]
     }).then(result => {
       if (result.button.accept) {
         cells.forEach(cell => {
@@ -1580,12 +1552,8 @@ namespace Private {
   function runCell(
     notebook: Notebook,
     cell: Cell,
-    sessionContext?: ISessionContext,
-    translator?: ITranslator
+    sessionContext?: ISessionContext
   ): Promise<boolean> {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
-
     switch (cell.model.type) {
       case 'markdown':
         (cell as MarkdownCell).rendered = true;
@@ -1594,17 +1562,6 @@ namespace Private {
         break;
       case 'code':
         if (sessionContext) {
-          if (sessionContext.isTerminating) {
-            void showDialog({
-              title: trans.__('Kernel Terminating'),
-              body: trans.__(
-                'The kernel for %1 appears to be terminating. You can not run any cell for now.',
-                sessionContext.session?.path
-              ),
-              buttons: [Dialog.okButton({ label: trans.__('Ok') })]
-            });
-            break;
-          }
           const deletedCells = notebook.model?.deletedCells ?? [];
           return CodeCell.execute(cell as CodeCell, sessionContext, {
             deletedCells,
@@ -1715,7 +1672,7 @@ namespace Private {
     notebook.mode = 'command';
     clipboard.clear();
 
-    const data = notebook.widgets
+    let data = notebook.widgets
       .filter(cell => notebook.isSelectedOrActive(cell))
       .map(cell => cell.model.toJSON())
       .map(cellJSON => {

@@ -2,10 +2,8 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { PageConfig, URLExt } from '@jupyterlab/coreutils';
-(window as any).__webpack_public_path__ = URLExt.join(
-  PageConfig.getBaseUrl(),
-  'example/'
-);
+// @ts-ignore
+__webpack_public_path__ = URLExt.join(PageConfig.getBaseUrl(), 'example/');
 
 import '@jupyterlab/application/style/index.css';
 import '@jupyterlab/codemirror/style/index.css';
@@ -48,7 +46,7 @@ import {
 import { SetupCommands } from './commands';
 
 function main(): void {
-  const manager = new ServiceManager();
+  let manager = new ServiceManager();
   void manager.ready.then(() => {
     createApp(manager);
   });
@@ -56,8 +54,8 @@ function main(): void {
 
 function createApp(manager: ServiceManager.IManager): void {
   // Initialize the command registry with the bindings.
-  const commands = new CommandRegistry();
-  const useCapture = true;
+  let commands = new CommandRegistry();
+  let useCapture = true;
 
   // Setup the keydown listener for the document.
   document.addEventListener(
@@ -68,7 +66,7 @@ function createApp(manager: ServiceManager.IManager): void {
     useCapture
   );
 
-  const rendermime = new RenderMimeRegistry({
+  let rendermime = new RenderMimeRegistry({
     initialFactories: initialFactories,
     latexTypesetter: new MathJaxTypesetter({
       url: PageConfig.getOption('mathjaxUrl'),
@@ -76,23 +74,23 @@ function createApp(manager: ServiceManager.IManager): void {
     })
   });
 
-  const opener = {
+  let opener = {
     open: (widget: Widget) => {
       // Do nothing for sibling widgets for now.
     }
   };
 
-  const docRegistry = new DocumentRegistry();
-  const docManager = new DocumentManager({
+  let docRegistry = new DocumentRegistry();
+  let docManager = new DocumentManager({
     registry: docRegistry,
     manager,
     opener
   });
-  const mFactory = new NotebookModelFactory({});
-  const editorFactory = editorServices.factoryService.newInlineEditor;
-  const contentFactory = new NotebookPanel.ContentFactory({ editorFactory });
+  let mFactory = new NotebookModelFactory({});
+  let editorFactory = editorServices.factoryService.newInlineEditor;
+  let contentFactory = new NotebookPanel.ContentFactory({ editorFactory });
 
-  const wFactory = new NotebookWidgetFactory({
+  let wFactory = new NotebookWidgetFactory({
     name: 'Notebook',
     modelName: 'notebook',
     fileTypes: ['notebook'],
@@ -106,9 +104,9 @@ function createApp(manager: ServiceManager.IManager): void {
   docRegistry.addModelFactory(mFactory);
   docRegistry.addWidgetFactory(wFactory);
 
-  const notebookPath = PageConfig.getOption('notebookPath');
-  const nbWidget = docManager.open(notebookPath) as NotebookPanel;
-  const palette = new CommandPalette({ commands });
+  let notebookPath = PageConfig.getOption('notebookPath');
+  let nbWidget = docManager.open(notebookPath) as NotebookPanel;
+  let palette = new CommandPalette({ commands });
   palette.addClass('notebookCommandPalette');
 
   const editor =
@@ -138,7 +136,7 @@ function createApp(manager: ServiceManager.IManager): void {
   // Hide the widget when it first loads.
   completer.hide();
 
-  const panel = new SplitPanel();
+  let panel = new SplitPanel();
   panel.id = 'main';
   panel.orientation = 'horizontal';
   panel.spacing = 0;
@@ -158,7 +156,7 @@ function createApp(manager: ServiceManager.IManager): void {
 
   SetupCommands(commands, palette, nbWidget, handler);
 
-  console.debug('Example started!');
+  console.log('Example started!');
 }
 
 window.addEventListener('load', main);

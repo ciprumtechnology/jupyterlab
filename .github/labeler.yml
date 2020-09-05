@@ -268,12 +268,6 @@ pkg:tooltip:
   - packages/tooltip-extension/**/*
   - packages/tooltip-extension/*
 
-pkg:translation:
-  - packages/translation/**/*
-  - packages/translation/*
-  - packages/translation-extension/**/*
-  - packages/translation-extension/*
-
 pkg:ui-components:
   - packages/ui-components/**/*
   - packages/ui-components/*

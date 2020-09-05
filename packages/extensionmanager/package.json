@@ -1,6 +1,6 @@
 {
   "name": "@jupyterlab/extensionmanager",
-  "version": "3.0.0-beta.1",
+  "version": "2.1.0",
   "description": "JupyterLab - Extension Manager",
   "homepage": "https://github.com/jupyterlab/jupyterlab",
   "bugs": {
@@ -12,6 +12,12 @@
   },
   "license": "BSD-3-Clause",
   "author": "Project Jupyter",
+  "files": [
+    "lib/*.d.ts",
+    "lib/*.js.map",
+    "lib/*.js",
+    "style/*.css"
+  ],
   "sideEffects": [
     "style/*.css"
   ],
@@ -21,40 +27,32 @@
   "directories": {
     "lib": "lib/"
   },
-  "files": [
-    "lib/*.d.ts",
-    "lib/*.js.map",
-    "lib/*.js",
-    "style/*.css"
-  ],
   "scripts": {
     "build": "tsc -b",
-    "clean": "rimraf lib && rimraf tsconfig.tsbuildinfo",
+    "clean": "rimraf lib",
     "docs": "typedoc src",
     "prepublishOnly": "npm run build",
     "watch": "tsc -b --watch"
   },
   "dependencies": {
-    "@jupyterlab/application": "^3.0.0-beta.1",
-    "@jupyterlab/apputils": "^3.0.0-beta.1",
-    "@jupyterlab/coreutils": "^5.0.0-beta.1",
-    "@jupyterlab/services": "^6.0.0-beta.1",
-    "@jupyterlab/settingregistry": "^3.0.0-beta.1",
-    "@jupyterlab/translation": "^3.0.0-beta.1",
-    "@jupyterlab/ui-components": "^3.0.0-beta.1",
-    "@lumino/messaging": "^1.4.3",
-    "@lumino/polling": "^1.3.3",
-    "@lumino/signaling": "^1.4.3",
-    "react": "~16.13.1",
+    "@jupyterlab/apputils": "^2.1.0",
+    "@jupyterlab/coreutils": "^4.1.0",
+    "@jupyterlab/services": "^5.1.0",
+    "@jupyterlab/settingregistry": "^2.1.0",
+    "@jupyterlab/ui-components": "^2.1.0",
+    "@lumino/messaging": "^1.3.3",
+    "@lumino/polling": "^1.1.1",
+    "@lumino/signaling": "^1.3.5",
+    "react": "~16.9.0",
     "react-paginate": "^6.3.2",
-    "semver": "^7.3.2"
+    "semver": "^6.3.0"
   },
   "devDependencies": {
     "@types/react-paginate": "^6.2.1",
-    "@types/semver": "^7.3.3",
+    "@types/semver": "^6.2.0",
     "rimraf": "~3.0.0",
-    "typedoc": "0.17.0-3",
-    "typescript": "~4.0.2"
+    "typedoc": "^0.15.4",
+    "typescript": "~3.7.3"
   },
   "publishConfig": {
     "access": "public"

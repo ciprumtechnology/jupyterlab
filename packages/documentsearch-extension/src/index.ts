@@ -18,7 +18,6 @@ import {
 } from '@jupyterlab/documentsearch';
 
 import { IMainMenu } from '@jupyterlab/mainmenu';
-import { ITranslator } from '@jupyterlab/translation';
 import { Widget } from '@lumino/widgets';
 
 const SEARCHABLE_CLASS = 'jp-mod-searchable';
@@ -73,17 +72,13 @@ const labShellWidgetListener: JupyterFrontEndPlugin<void> = {
 const extension: JupyterFrontEndPlugin<ISearchProviderRegistry> = {
   id: '@jupyterlab/documentsearch:plugin',
   provides: ISearchProviderRegistry,
-  requires: [ITranslator],
   optional: [ICommandPalette, IMainMenu],
   autoStart: true,
   activate: (
     app: JupyterFrontEnd,
-    translator: ITranslator,
     palette: ICommandPalette,
     mainMenu: IMainMenu | null
   ) => {
-    const trans = translator.load('jupyterlab');
-
     // Create registry, retrieve all default providers
     const registry: SearchProviderRegistry = new SearchProviderRegistry();
 
@@ -117,11 +112,7 @@ const extension: JupyterFrontEndPlugin<ISearchProviderRegistry> = {
         if (!searchProvider) {
           return;
         }
-        searchInstance = new SearchInstance(
-          currentWidget,
-          searchProvider,
-          translator
-        );
+        searchInstance = new SearchInstance(currentWidget, searchProvider);
 
         activeSearches.set(widgetId, searchInstance);
         // find next and previous are now enabled
@@ -137,7 +128,7 @@ const extension: JupyterFrontEndPlugin<ISearchProviderRegistry> = {
     };
 
     app.commands.addCommand(startCommand, {
-      label: trans.__('Find…'),
+      label: 'Find…',
       isEnabled: currentWidgetHasSearchProvider,
       execute: () => {
         const searchInstance = getCurrentWidgetSearchInstance();
@@ -148,7 +139,7 @@ const extension: JupyterFrontEndPlugin<ISearchProviderRegistry> = {
     });
 
     app.commands.addCommand(startReplaceCommand, {
-      label: trans.__('Find and Replace…'),
+      label: 'Find and Replace…',
       isEnabled: currentWidgetHasSearchProvider,
       execute: () => {
         const searchInstance = getCurrentWidgetSearchInstance();
@@ -160,7 +151,7 @@ const extension: JupyterFrontEndPlugin<ISearchProviderRegistry> = {
     });
 
     app.commands.addCommand(nextCommand, {
-      label: trans.__('Find Next'),
+      label: 'Find Next',
       isEnabled: () => {
         const currentWidget = app.shell.currentWidget;
         if (!currentWidget) {
@@ -184,7 +175,7 @@ const extension: JupyterFrontEndPlugin<ISearchProviderRegistry> = {
     });
 
     app.commands.addCommand(prevCommand, {
-      label: trans.__('Find Previous'),
+      label: 'Find Previous',
       isEnabled: () => {
         const currentWidget = app.shell.currentWidget;
         if (!currentWidget) {
@@ -209,18 +200,9 @@ const extension: JupyterFrontEndPlugin<ISearchProviderRegistry> = {
 
     // Add the command to the palette.
     if (palette) {
-      palette.addItem({
-        command: startCommand,
-        category: trans.__('Main Area')
-      });
-      palette.addItem({
-        command: nextCommand,
-        category: trans.__('Main Area')
-      });
-      palette.addItem({
-        command: prevCommand,
-        category: trans.__('Main Area')
-      });
+      palette.addItem({ command: startCommand, category: 'Main Area' });
+      palette.addItem({ command: nextCommand, category: 'Main Area' });
+      palette.addItem({ command: prevCommand, category: 'Main Area' });
     }
     // Add main menu notebook menu.
     if (mainMenu) {

@@ -15,8 +15,6 @@ import {
   TextItem
 } from '@jupyterlab/statusbar';
 
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
-
 import { Menu } from '@lumino/widgets';
 
 /**
@@ -38,11 +36,6 @@ namespace TabSpaceComponent {
     isSpaces: boolean;
 
     /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
-
-    /**
      * A click handler for the TabSpace component. By default
      * opens a menu allowing the user to select tabs vs spaces.
      */
@@ -56,16 +49,12 @@ namespace TabSpaceComponent {
 function TabSpaceComponent(
   props: TabSpaceComponent.IProps
 ): React.ReactElement<TabSpaceComponent.IProps> {
-  const translator = props.translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
-  const description = props.isSpaces
-    ? trans.__('Spaces')
-    : trans.__('Tab Size');
+  const description = props.isSpaces ? 'Spaces' : 'Tab Size';
   return (
     <TextItem
       onClick={props.handleClick}
       source={`${description}: ${props.tabSpace}`}
-      title={trans.__('Change Tab indentation…')}
+      title={`Change Tab indentation…`}
     />
   );
 }
@@ -80,7 +69,6 @@ export class TabSpaceStatus extends VDomRenderer<TabSpaceStatus.Model> {
   constructor(options: TabSpaceStatus.IOptions) {
     super(new TabSpaceStatus.Model());
     this._menu = options.menu;
-    this.translator = options.translator || nullTranslator;
     this.addClass(interactiveItem);
   }
 
@@ -96,7 +84,6 @@ export class TabSpaceStatus extends VDomRenderer<TabSpaceStatus.Model> {
           isSpaces={this.model.config.insertSpaces}
           tabSpace={this.model.config.tabSize}
           handleClick={() => this._handleClick()}
-          translator={this.translator}
         />
       );
     }
@@ -124,7 +111,6 @@ export class TabSpaceStatus extends VDomRenderer<TabSpaceStatus.Model> {
     this.removeClass(clickedItem);
   }
 
-  protected translator: ITranslator;
   private _menu: Menu;
   private _popup: Popup | null = null;
 }
@@ -174,10 +160,5 @@ export namespace TabSpaceStatus {
      * the user to make a different selection about tabs/spaces.
      */
     menu: Menu;
-
-    /**
-     * Language translator.
-     */
-    translator?: ITranslator;
   }
 }

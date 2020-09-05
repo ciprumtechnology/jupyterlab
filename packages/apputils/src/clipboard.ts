@@ -31,9 +31,9 @@ export namespace Clipboard {
    * This can only be called in response to a user input event.
    */
   export function copyToSystem(clipboardData: ClipboardData): void {
-    const node = document.body;
-    const handler = (event: ClipboardEvent) => {
-      const data = event.clipboardData || (window as any).clipboardData;
+    let node = document.body;
+    let handler = (event: ClipboardEvent) => {
+      let data = event.clipboardData || (window as any).clipboardData;
       if (typeof clipboardData === 'string') {
         data.setData('text', clipboardData);
       } else {
@@ -69,13 +69,13 @@ export namespace Clipboard {
     let sel = window.getSelection();
 
     // Save the current selection.
-    const savedRanges: any[] = [];
+    let savedRanges: any[] = [];
     for (let i = 0, len = sel?.rangeCount || 0; i < len; ++i) {
       savedRanges[i] = sel!.getRangeAt(i).cloneRange();
     }
 
     // Select the node content.
-    const range = document.createRange();
+    let range = document.createRange();
     range.selectNodeContents(node);
     if (sel) {
       sel.removeAllRanges();

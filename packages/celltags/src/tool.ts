@@ -1,14 +1,13 @@
-import { reduce } from '@lumino/algorithm';
 import { PanelLayout } from '@lumino/widgets';
+
 import { NotebookTools, INotebookTracker } from '@jupyterlab/notebook';
+
 import { Cell } from '@jupyterlab/cells';
+
 import { JupyterFrontEnd } from '@jupyterlab/application';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
+
 import { TagWidget } from './widget';
+
 import { AddWidget } from './addwidget';
 
 /**
@@ -20,15 +19,9 @@ export class TagTool extends NotebookTools.Tool {
    *
    * @param tracker - The notebook tracker.
    */
-  constructor(
-    tracker: INotebookTracker,
-    app: JupyterFrontEnd,
-    translator?: ITranslator
-  ) {
+  constructor(tracker: INotebookTracker, app: JupyterFrontEnd) {
     super();
     app;
-    this.translator = translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this.tracker = tracker;
     this.layout = new PanelLayout();
     this.createTagInput();
@@ -38,8 +31,8 @@ export class TagTool extends NotebookTools.Tool {
    * Add an AddWidget input box to the layout.
    */
   createTagInput() {
-    const layout = this.layout as PanelLayout;
-    const input = new AddWidget(this.translator);
+    let layout = this.layout as PanelLayout;
+    let input = new AddWidget();
     input.id = 'add-tag';
     layout.insertWidget(0, input);
   }
@@ -52,11 +45,14 @@ export class TagTool extends NotebookTools.Tool {
    * @returns A boolean representing whether it is applied.
    */
   checkApplied(name: string): boolean {
-    const activeCell = this.tracker?.activeCell;
-    if (activeCell) {
-      const tags = activeCell.model.metadata.get('tags') as string[];
+    if (this.tracker.activeCell) {
+      let tags = this.tracker.activeCell.model.metadata.get('tags') as string[];
       if (tags) {
-        return tags.includes(name);
+        for (let i = 0; i < tags.length; i++) {
+          if (tags[i] === name) {
+            return true;
+          }
+        }
       }
     }
     return false;
@@ -68,15 +64,20 @@ export class TagTool extends NotebookTools.Tool {
    * @param name - The name of the tag.
    */
   addTag(name: string) {
-    const cell = this.tracker?.activeCell;
-    if (cell) {
-      const oldTags = (cell.model.metadata.get('tags') as string[]) || [];
-      let tagsToAdd = name.split(/[,\s]+/);
-      tagsToAdd = tagsToAdd.filter(tag => tag !== '' && !oldTags.includes(tag));
-      cell.model.metadata.set('tags', oldTags.concat(tagsToAdd));
-      this.refreshTags();
-      this.loadActiveTags();
+    let cell = this.tracker.activeCell;
+    let tags = cell.model.metadata.get('tags') as string[];
+    let newTags = name.split(/[,\s]+/);
+    if (tags === undefined) {
+      tags = [];
     }
+    for (let i = 0; i < newTags.length; i++) {
+      if (newTags[i] !== '' && tags.indexOf(newTags[i]) < 0) {
+        tags.push(newTags[i]);
+      }
+    }
+    cell.model.metadata.set('tags', tags);
+    this.refreshTags();
+    this.loadActiveTags();
   }
 
   /**
@@ -85,17 +86,18 @@ export class TagTool extends NotebookTools.Tool {
    * @param name - The name of the tag.
    */
   removeTag(name: string) {
-    const cell = this.tracker?.activeCell;
-    if (cell) {
-      const oldTags = cell.model.metadata.get('tags') as string[];
-      let tags = oldTags.filter(tag => tag !== name);
-      cell.model.metadata.set('tags', tags);
-      if (tags.length === 0) {
-        cell.model.metadata.delete('tags');
-      }
-      this.refreshTags();
-      this.loadActiveTags();
+    let cell = this.tracker.activeCell;
+    let tags = cell.model.metadata.get('tags') as string[];
+    let idx = tags.indexOf(name);
+    if (idx > -1) {
+      tags.splice(idx, 1);
     }
+    cell.model.metadata.set('tags', tags);
+    if (tags.length === 0) {
+      cell.model.metadata.delete('tags');
+    }
+    this.refreshTags();
+    this.loadActiveTags();
   }
 
   /**
@@ -103,9 +105,9 @@ export class TagTool extends NotebookTools.Tool {
    * active cell.
    */
   loadActiveTags() {
-    const layout = this.layout as PanelLayout;
-    for (const widget of layout.widgets) {
-      widget.update();
+    let layout = this.layout as PanelLayout;
+    for (let i = 0; i < layout.widgets.length; i++) {
+      layout.widgets[i].update();
     }
   }
 
@@ -114,17 +116,26 @@ export class TagTool extends NotebookTools.Tool {
    * stored tag list.
    */
   pullTags() {
-    const notebook = this.tracker?.currentWidget;
-    const cells = notebook?.model?.cells || [];
-    const allTags = reduce(
-      cells,
-      (allTags: string[], cell) => {
-        const tags = (cell.metadata.get('tags') as string[]) || [];
-        return [...allTags, ...tags];
-      },
-      []
-    );
-    this.tagList = [...new Set(allTags)].filter(tag => tag !== '');
+    let notebook = this.tracker.currentWidget;
+    if (this.tracker && this.tracker.currentWidget) {
+      let cells = notebook.model.cells;
+      let allTags: string[] = [];
+      for (let i = 0; i < cells.length; i++) {
+        let metadata = cells.get(i).metadata;
+        let tags = metadata.get('tags') as string[];
+        if (tags) {
+          for (let j = 0; j < tags.length; j++) {
+            let name = tags[j] as string;
+            if (name !== '') {
+              if (allTags.indexOf(name) < 0) {
+                allTags.push(name);
+              }
+            }
+          }
+        }
+      }
+      this.tagList = allTags;
+    }
   }
 
   /**
@@ -133,37 +144,45 @@ export class TagTool extends NotebookTools.Tool {
    */
   refreshTags() {
     this.pullTags();
-    const layout = this.layout as PanelLayout;
-    const tagWidgets = layout.widgets.filter(w => w.id !== 'add-tag');
-    tagWidgets.forEach(widget => {
-      if (!this.tagList.includes((widget as TagWidget).name)) {
-        widget.dispose();
+    let layout = this.layout as PanelLayout;
+    let tags: string[] = this.tagList;
+    let toDispose: TagWidget[] = [];
+    let nWidgets = layout.widgets.length;
+    for (let i = 0; i < nWidgets; i++) {
+      let idx = tags.indexOf((layout.widgets[i] as TagWidget).name);
+      if (idx < 0 && layout.widgets[i].id !== 'add-tag') {
+        toDispose.push(layout.widgets[i] as TagWidget);
+      } else if (layout.widgets[i].id !== 'add-tag') {
+        tags.splice(idx, 1);
       }
-    });
-    const tagWidgetNames = tagWidgets.map(w => (w as TagWidget).name);
-    this.tagList.forEach(tag => {
-      if (!tagWidgetNames.includes(tag)) {
-        const idx = layout.widgets.length - 1;
-        layout.insertWidget(idx, new TagWidget(tag));
-      }
-    });
+    }
+    for (let i = 0; i < toDispose.length; i++) {
+      toDispose[i].dispose();
+    }
+    for (let i = 0; i < tags.length; i++) {
+      let widget = new TagWidget(tags[i]);
+      let idx = layout.widgets.length - 1;
+      layout.insertWidget(idx, widget);
+    }
   }
 
   /**
    * Validate the 'tags' of cell metadata, ensuring it is a list of strings and
    * that each string doesn't include spaces.
    */
-  validateTags(cell: Cell, tags: string[]) {
-    tags = tags.filter(tag => typeof tag === 'string');
-    tags = reduce(
-      tags,
-      (allTags: string[], tag) => {
-        return [...allTags, ...tag.split(/[,\s]+/)];
-      },
-      []
-    );
-    const validTags = [...new Set(tags)].filter(tag => tag !== '');
-    cell.model.metadata.set('tags', validTags);
+  validateTags(cell: Cell, taglist: string[]) {
+    let results: string[] = [];
+    for (let i = 0; i < taglist.length; i++) {
+      if (taglist[i] !== '' && typeof taglist[i] === 'string') {
+        let spl = taglist[i].split(/[,\s]+/);
+        for (let j = 0; j < spl.length; j++) {
+          if (spl[j] !== '' && results.indexOf(spl[j]) < 0) {
+            results.push(spl[j]);
+          }
+        }
+      }
+    }
+    cell.model.metadata.set('tags', results);
     this.refreshTags();
     this.loadActiveTags();
   }
@@ -190,9 +209,9 @@ export class TagTool extends NotebookTools.Tool {
   protected onAfterAttach() {
     if (!this.header) {
       const header = document.createElement('header');
-      header.textContent = this._trans.__('Tags in Notebook');
+      header.textContent = 'Tags in Notebook';
       header.className = 'tag-header';
-      this.parent!.node.insertBefore(header, this.node);
+      this.parent.node.insertBefore(header, this.node);
       this.header = true;
     }
     if (this.tracker.currentWidget) {
@@ -200,7 +219,7 @@ export class TagTool extends NotebookTools.Tool {
         this.refreshTags();
         this.loadActiveTags();
       });
-      this.tracker.currentWidget.model!.cells.changed.connect(() => {
+      this.tracker.currentWidget.model.cells.changed.connect(() => {
         this.refreshTags();
         this.loadActiveTags();
       });
@@ -215,7 +234,7 @@ export class TagTool extends NotebookTools.Tool {
    * Handle a change to active cell metadata.
    */
   protected onActiveCellMetadataChanged(): void {
-    const tags = this.tracker.activeCell!.model.metadata.get('tags');
+    let tags = this.tracker.activeCell.model.metadata.get('tags');
     let taglist: string[] = [];
     if (tags === undefined) {
       return;
@@ -225,12 +244,10 @@ export class TagTool extends NotebookTools.Tool {
     } else {
       taglist = tags as string[];
     }
-    this.validateTags(this.tracker.activeCell!, taglist);
+    this.validateTags(this.tracker.activeCell, taglist);
   }
 
-  public tracker: INotebookTracker;
+  public tracker: INotebookTracker = null;
   private tagList: string[] = [];
   private header: boolean = false;
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
 }

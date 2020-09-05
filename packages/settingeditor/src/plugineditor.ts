@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -8,12 +8,6 @@ import { Dialog, showDialog } from '@jupyterlab/apputils';
 import { CodeEditor } from '@jupyterlab/codeeditor';
 
 import { IRenderMimeRegistry } from '@jupyterlab/rendermime';
-
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 
 import { ISettingRegistry } from '@jupyterlab/settingregistry';
 
@@ -49,15 +43,7 @@ export class PluginEditor extends Widget {
     super();
     this.addClass(PLUGIN_EDITOR_CLASS);
 
-    const {
-      commands,
-      editorFactory,
-      registry,
-      rendermime,
-      translator
-    } = options;
-    this.translator = translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
+    const { commands, editorFactory, registry, rendermime } = options;
 
     // TODO: Remove this layout. We were using this before when we
     // when we had a way to switch between the raw and table editor
@@ -71,8 +57,7 @@ export class PluginEditor extends Widget {
       editorFactory,
       onSaveError,
       registry,
-      rendermime,
-      translator
+      rendermime
     });
     this._rawEditor.handleMoved.connect(this._onStateChanged, this);
 
@@ -142,12 +127,9 @@ export class PluginEditor extends Widget {
     }
 
     return showDialog({
-      title: this._trans.__('You have unsaved changes.'),
-      body: this._trans.__('Do you want to leave without saving?'),
-      buttons: [
-        Dialog.cancelButton({ label: this._trans.__('Cancel') }),
-        Dialog.okButton({ label: this._trans.__('Ok') })
-      ]
+      title: 'You have unsaved changes.',
+      body: 'Do you want to leave without saving?',
+      buttons: [Dialog.cancelButton(), Dialog.okButton()]
     }).then(result => {
       if (!result.button.accept) {
         throw new Error('User canceled.');
@@ -197,8 +179,6 @@ export class PluginEditor extends Widget {
     (this.stateChanged as Signal<any, void>).emit(undefined);
   }
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _rawEditor: RawEditor;
   private _settings: ISettingRegistry.ISettings | null = null;
   private _stateChanged = new Signal<this, void>(this);
@@ -246,11 +226,6 @@ export namespace PluginEditor {
      * The optional MIME renderer to use for rendering debug messages.
      */
     rendermime?: IRenderMimeRegistry;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -261,14 +236,13 @@ namespace Private {
   /**
    * Handle save errors.
    */
-  export function onSaveError(reason: any, translator?: ITranslator): void {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
+  export function onSaveError(reason: any): void {
     console.error(`Saving setting editor value failed: ${reason.message}`);
+
     void showDialog({
-      title: trans.__('Your changes were not saved.'),
+      title: 'Your changes were not saved.',
       body: reason.message,
-      buttons: [Dialog.okButton({ label: trans.__('Ok') })]
+      buttons: [Dialog.okButton()]
     });
   }
 }

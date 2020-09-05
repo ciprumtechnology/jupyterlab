@@ -1,6 +1,6 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
-import { Property } from 'csstype';
+import { WhiteSpaceProperty } from 'csstype';
 
 export default {
   hoverColor: 'var(--jp-layout-color3)',
@@ -15,6 +15,6 @@ export default {
   itemPadding: '6px',
   statusBarPadding: '10px',
   interItemHalfSpacing: '2px', // this amount accounts for half the spacing between items
-  whiteSpace: 'nowrap' as Property.WhiteSpace,
+  whiteSpace: 'nowrap' as WhiteSpaceProperty,
   textOverflow: 'ellipsis'
 };

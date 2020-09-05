@@ -43,11 +43,10 @@ export const KERNEL_SERVICE_URL = 'api/kernels';
 export async function listRunning(
   settings: ServerConnection.ISettings = ServerConnection.makeSettings()
 ): Promise<IModel[]> {
-  const url = URLExt.join(settings.baseUrl, KERNEL_SERVICE_URL);
+  let url = URLExt.join(settings.baseUrl, KERNEL_SERVICE_URL);
   const response = await ServerConnection.makeRequest(url, {}, settings);
   if (response.status !== 200) {
-    const err = await ServerConnection.ResponseError.create(response);
-    throw err;
+    throw new ServerConnection.ResponseError(response);
   }
   const data = await response.json();
   validateModels(data);
@@ -70,17 +69,16 @@ export async function startNew(
   options: IKernelOptions = {},
   settings: ServerConnection.ISettings = ServerConnection.makeSettings()
 ): Promise<IModel> {
-  const url = URLExt.join(settings.baseUrl, KERNEL_SERVICE_URL);
-  const init = {
+  let url = URLExt.join(settings.baseUrl, KERNEL_SERVICE_URL);
+  let init = {
     method: 'POST',
     body: JSON.stringify(options)
   };
-  const response = await ServerConnection.makeRequest(url, init, settings);
+  let response = await ServerConnection.makeRequest(url, init, settings);
   if (response.status !== 201) {
-    const err = await ServerConnection.ResponseError.create(response);
-    throw err;
+    throw new ServerConnection.ResponseError(response);
   }
-  const data = await response.json();
+  let data = await response.json();
   validateModel(data);
   return data;
 }
@@ -102,20 +100,19 @@ export async function restartKernel(
   id: string,
   settings: ServerConnection.ISettings = ServerConnection.makeSettings()
 ): Promise<void> {
-  const url = URLExt.join(
+  let url = URLExt.join(
     settings.baseUrl,
     KERNEL_SERVICE_URL,
     encodeURIComponent(id),
     'restart'
   );
-  const init = { method: 'POST' };
+  let init = { method: 'POST' };
 
-  const response = await ServerConnection.makeRequest(url, init, settings);
+  let response = await ServerConnection.makeRequest(url, init, settings);
   if (response.status !== 200) {
-    const err = await ServerConnection.ResponseError.create(response);
-    throw err;
+    throw new ServerConnection.ResponseError(response);
   }
-  const data = await response.json();
+  let data = await response.json();
   validateModel(data);
 }
 
@@ -131,17 +128,16 @@ export async function interruptKernel(
   id: string,
   settings: ServerConnection.ISettings = ServerConnection.makeSettings()
 ): Promise<void> {
-  const url = URLExt.join(
+  let url = URLExt.join(
     settings.baseUrl,
     KERNEL_SERVICE_URL,
     encodeURIComponent(id),
     'interrupt'
   );
-  const init = { method: 'POST' };
-  const response = await ServerConnection.makeRequest(url, init, settings);
+  let init = { method: 'POST' };
+  let response = await ServerConnection.makeRequest(url, init, settings);
   if (response.status !== 204) {
-    const err = await ServerConnection.ResponseError.create(response);
-    throw err;
+    throw new ServerConnection.ResponseError(response);
   }
 }
 
@@ -164,19 +160,18 @@ export async function shutdownKernel(
   id: string,
   settings: ServerConnection.ISettings = ServerConnection.makeSettings()
 ): Promise<void> {
-  const url = URLExt.join(
+  let url = URLExt.join(
     settings.baseUrl,
     KERNEL_SERVICE_URL,
     encodeURIComponent(id)
   );
-  const init = { method: 'DELETE' };
-  const response = await ServerConnection.makeRequest(url, init, settings);
+  let init = { method: 'DELETE' };
+  let response = await ServerConnection.makeRequest(url, init, settings);
   if (response.status === 404) {
-    const msg = `The kernel "${id}" does not exist on the server`;
+    let msg = `The kernel "${id}" does not exist on the server`;
     console.warn(msg);
   } else if (response.status !== 204) {
-    const err = await ServerConnection.ResponseError.create(response);
-    throw err;
+    throw new ServerConnection.ResponseError(response);
   }
 }
 
@@ -192,20 +187,19 @@ export async function getKernelModel(
   id: string,
   settings: ServerConnection.ISettings = ServerConnection.makeSettings()
 ): Promise<IModel | undefined> {
-  const url = URLExt.join(
+  let url = URLExt.join(
     settings.baseUrl,
     KERNEL_SERVICE_URL,
     encodeURIComponent(id)
   );
 
-  const response = await ServerConnection.makeRequest(url, {}, settings);
+  let response = await ServerConnection.makeRequest(url, {}, settings);
   if (response.status === 404) {
     return undefined;
   } else if (response.status !== 200) {
-    const err = await ServerConnection.ResponseError.create(response);
-    throw err;
+    throw new ServerConnection.ResponseError(response);
   }
-  const data = await response.json();
+  let data = await response.json();
   validateModel(data);
   return data;
 }

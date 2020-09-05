@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -20,8 +20,8 @@ function flat(arr: any[]) {
  * Parse the yarn file at the given path.
  */
 function readYarn(basePath: string = '.') {
-  const file = fs.readFileSync(path.join(basePath, 'yarn.lock'), 'utf8');
-  const json = lockfile.parse(file);
+  let file = fs.readFileSync(path.join(basePath, 'yarn.lock'), 'utf8');
+  let json = lockfile.parse(file);
 
   if (json.type !== 'success') {
     throw new Error('Error reading file');
@@ -44,9 +44,9 @@ function getNode(yarnData: any, pkgName: string) {
     );
     return undefined;
   }
-  const name = pkgName[0] + pkgName.slice(1).split('@')[0];
-  const version = yarnData[pkgName].version;
-  const pkgNode = `${name}@${version}`;
+  let name = pkgName[0] + pkgName.slice(1).split('@')[0];
+  let version = yarnData[pkgName].version;
+  let pkgNode = `${name}@${version}`;
   return pkgNode;
 }
 
@@ -65,8 +65,8 @@ function buildYarnGraph(yarnData: any): Graph {
   const dependsOn: Graph = Object.create(null);
 
   Object.keys(yarnData).forEach(pkgName => {
-    const pkg = yarnData[pkgName];
-    const pkgNode = getNode(yarnData, pkgName)!;
+    let pkg = yarnData[pkgName];
+    let pkgNode = getNode(yarnData, pkgName)!;
 
     // If multiple version specs resolve to the same actual package version, we
     // only want to record the dependency once.
@@ -75,10 +75,10 @@ function buildYarnGraph(yarnData: any): Graph {
     }
 
     dependsOn[pkgNode] = [];
-    const deps = pkg.dependencies;
+    let deps = pkg.dependencies;
     if (deps) {
       Object.keys(deps).forEach(depName => {
-        const depNode = getNode(yarnData, `${depName}@${deps[depName]}`)!;
+        let depNode = getNode(yarnData, `${depName}@${deps[depName]}`)!;
         dependsOn[pkgNode].push(depNode);
       });
     }
@@ -90,11 +90,11 @@ function buildYarnGraph(yarnData: any): Graph {
  * Construct a subgraph of all nodes reachable from the given nodes.
  */
 function subgraph(graph: Graph, nodes: string[]): Graph {
-  const sub = Object.create(null);
+  let sub = Object.create(null);
   // Seed the graph
   let newNodes = nodes;
   while (newNodes.length > 0) {
-    const old = newNodes;
+    let old = newNodes;
     newNodes = [];
     old.forEach(i => {
       if (!(i in sub)) {
@@ -127,13 +127,13 @@ function convertDot(
   distinguishRoots = false,
   distinguishLeaves = false
 ) {
-  const edges: string[][] = flat(
+  let edges: string[][] = flat(
     Object.keys(g).map(a => g[a].map(b => [a, b]))
   ).sort();
-  const nodes = Object.keys(g).sort();
+  let nodes = Object.keys(g).sort();
   // let leaves = Object.keys(g).filter(i => g[i].length === 0);
   // let roots = Object.keys(g).filter(i => g[i].length === 0);
-  const dot = `
+  let dot = `
 digraph DEPS {
   ${graphOptions || ''}
   ${nodes.map(node => `"${node}";`).join(' ')}
@@ -166,10 +166,10 @@ function main({
   lumino,
   topLevel
 }: IMainOptions) {
-  const yarnData = readYarn(path);
-  const graph = buildYarnGraph(yarnData);
+  let yarnData = readYarn(path);
+  let graph = buildYarnGraph(yarnData);
 
-  const paths: string[] = [path];
+  let paths: string[] = [path];
   if (lerna !== false) {
     paths.push(...utils.getLernaPaths(path).sort());
   }
@@ -182,11 +182,11 @@ function main({
 
   // Filter lerna packages if a regex was supplied
   if (lernaInclude) {
-    const re = new RegExp(lernaInclude);
+    let re = new RegExp(lernaInclude);
     data = data.filter(d => d.name && d.name.match(re));
   }
   if (lernaExclude) {
-    const re = new RegExp(lernaExclude);
+    let re = new RegExp(lernaExclude);
     data = data.filter(d => d.name && !d.name.match(re));
   }
 
@@ -201,13 +201,13 @@ function main({
    * All dependency roots *except* other packages in this repo.
    */
   const dependencyRoots: string[][] = data.map(d => {
-    const roots: string[] = [];
-    for (const depKind of depKinds) {
-      const deps = d[depKind];
+    let roots: string[] = [];
+    for (let depKind of depKinds) {
+      let deps = d[depKind];
       if (deps === undefined) {
         continue;
       }
-      const nodes = Object.keys(deps)
+      let nodes = Object.keys(deps)
         .map(i => {
           // Do not get a package if it is a top-level package (and this is
           // not in yarn).
@@ -222,7 +222,7 @@ function main({
   });
 
   // Find the subgraph
-  const sub = subgraph(graph, flat(dependencyRoots));
+  let sub = subgraph(graph, flat(dependencyRoots));
 
   // Add in top-level lerna packages if desired
   if (topLevel) {
@@ -286,8 +286,8 @@ commander
     'dot graph options (such as "ratio=0.25; concentrate=true;")'
   )
   .action(args => {
-    const graph = main(args);
-    console.debug(convertDot(graph, args.graphOptions));
+    let graph = main(args);
+    console.log(convertDot(graph, args.graphOptions));
     console.error(`Nodes: ${Object.keys(graph).length}`);
   });
 

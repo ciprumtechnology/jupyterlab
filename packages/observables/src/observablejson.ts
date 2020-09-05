@@ -56,7 +56,7 @@ export class ObservableJSON extends ObservableMap<ReadonlyPartialJSONValue> {
     const out: PartialJSONObject = Object.create(null);
     const keys = this.keys();
 
-    for (const key of keys) {
+    for (let key of keys) {
       const value = this.get(key);
 
       if (value !== undefined) {

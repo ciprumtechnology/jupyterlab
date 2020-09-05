@@ -16,9 +16,6 @@
       "path": "../docregistry"
     },
     {
-      "path": "../translation"
-    },
-    {
       "path": "../ui-components"
     }
   ]

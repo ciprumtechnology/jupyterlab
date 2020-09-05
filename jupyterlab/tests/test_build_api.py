@@ -2,46 +2,31 @@
 from tempfile import TemporaryDirectory
 import threading
 
-import asyncio
-import os
 import pytest
-import json
-import tornado
 
-from jupyterlab_server.tests.utils import expected_http_error
-
-
-@pytest.fixture
-def build_api_tester(serverapp, labapp, fetch_long):
-    return BuildAPITester(labapp, fetch_long)
+from jupyterlab.labapp import LabApp
+from jupyterlab_server.tests.utils import APITester, LabTestBase
+from notebook.tests.launchnotebook import assert_http_error
 
 
-class BuildAPITester():
+class BuildAPITester(APITester):
     """Wrapper for build REST API requests"""
     url = 'lab/api/build'
 
-    def __init__(self, labapp, fetch_long):
-        self.labapp = labapp
-        self.fetch = fetch_long
+    def getStatus(self):
+        return self._req('GET', '')
 
-    async def _req(self, verb, path, body=None):
-        return await self.fetch(self.url + path,
-            method=verb,
-            body=body
-            )
+    def build(self):
+        return self._req('POST', '')
 
-    async def getStatus(self):
-        return await self._req('GET', '')
-
-    async def build(self):
-        return await self._req('POST', '', json.dumps({}))
-
-    async def clear(self):
-        return await self._req('DELETE', '')
+    def clear(self):
+        return self._req('DELETE', '')
 
 
 @pytest.mark.slow
-class TestBuildAPI:
+class BuildAPITest(LabTestBase):
+    """Test the build web service API"""
+    Application = LabApp
 
     def tempdir(self):
         td = TemporaryDirectory()
@@ -53,50 +38,39 @@ class TestBuildAPI:
         # up at the end of the test run.
         self.tempdirs = []
 
-        # TODO(@echarles) Move the cleanup in the fixture.
         @self.addCleanup
         def cleanup_tempdirs():
             for d in self.tempdirs:
                 d.cleanup()
 
-#    @pytest.mark.timeout(timeout=30)
-#    @pytest.mark.gen_test(timeout=30)
-    async def test_get_status(self, build_api_tester):
+        self.build_api = BuildAPITester(self.request)
+
+    @pytest.mark.timeout(timeout=30)
+    def test_get_status(self):
         """Make sure there are no kernels running at the start"""
-        r = await build_api_tester.getStatus()
-        res = r.body.decode()
-        resp = json.loads(res)
+        resp = self.build_api.getStatus().json()
         assert 'status' in resp
         assert 'message' in resp
 
-#    @pytest.mark.gen_test(timeout=30)
-    # FIXME
-    @pytest.mark.skipif(os.name == 'nt',
-                    reason="Currently failing on windows")
-    async def test_build(self, build_api_tester):
-        r = await build_api_tester.build()
-        assert r.code == 200
+    def test_build(self):
+        resp = self.build_api.build()
+        assert resp.status_code == 200
 
-#    @pytest.mark.gen_test(timeout=30)
-    # FIXME
-    @pytest.mark.skipif(os.name == 'nt',
-                    reason="Currently failing on windows")
-    async def test_clear(self, build_api_tester):
-        with pytest.raises(tornado.httpclient.HTTPClientError) as e:
-            r = await build_api_tester.clear()
-            res = r.body.decode()
-        assert expected_http_error(e, 500)
+    def test_clear(self):
+        with assert_http_error(500):
+            self.build_api.clear()
 
-        loop = asyncio.get_event_loop()
-        asyncio.ensure_future(build_api_tester.build(), loop=loop)
+        def build_thread():
+            with assert_http_error(500):
+                self.build_api.build()
 
-        while True:
-            r = await build_api_tester.getStatus()
-            res = r.body.decode()
-            print(res)
-            resp = json.loads(res)
+        t1 = threading.Thread(target=build_thread)
+        t1.start()
+
+        while 1:
+            resp = self.build_api.getStatus().json()
             if resp['status'] == 'building':
                 break
 
-        r = await build_api_tester.clear()
-        assert r.code == 204
+        resp = self.build_api.clear()
+        assert resp.status_code == 204

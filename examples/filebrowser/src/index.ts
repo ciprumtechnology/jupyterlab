@@ -2,10 +2,8 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { PageConfig, URLExt } from '@jupyterlab/coreutils';
-(window as any).__webpack_public_path__ = URLExt.join(
-  PageConfig.getBaseUrl(),
-  'example/'
-);
+// @ts-ignore
+__webpack_public_path__ = URLExt.join(PageConfig.getBaseUrl(), 'example/');
 
 import '@jupyterlab/application/style/index.css';
 import '@jupyterlab/codemirror/style/index.css';
@@ -32,24 +30,24 @@ import { DocumentManager } from '@jupyterlab/docmanager';
 
 import { DocumentRegistry } from '@jupyterlab/docregistry';
 
-import { FileBrowser, FilterFileBrowserModel } from '@jupyterlab/filebrowser';
+import { FileBrowser, FileBrowserModel } from '@jupyterlab/filebrowser';
 
 import { FileEditorFactory } from '@jupyterlab/fileeditor';
 
 import { addIcon } from '@jupyterlab/ui-components';
 
 function main(): void {
-  const manager = new ServiceManager();
+  let manager = new ServiceManager();
   void manager.ready.then(() => {
     createApp(manager);
   });
 }
 
 function createApp(manager: ServiceManager.IManager): void {
-  const widgets: Widget[] = [];
+  let widgets: Widget[] = [];
   let activeWidget: Widget;
 
-  const opener = {
+  let opener = {
     open: (widget: Widget) => {
       if (widgets.indexOf(widget) === -1) {
         dock.addWidget(widget, { mode: 'tab-after' });
@@ -58,23 +56,23 @@ function createApp(manager: ServiceManager.IManager): void {
       dock.activateWidget(widget);
       activeWidget = widget;
       widget.disposed.connect((w: Widget) => {
-        const index = widgets.indexOf(w);
+        let index = widgets.indexOf(w);
         widgets.splice(index, 1);
       });
     }
   };
 
-  const docRegistry = new DocumentRegistry();
-  const docManager = new DocumentManager({
+  let docRegistry = new DocumentRegistry();
+  let docManager = new DocumentManager({
     registry: docRegistry,
     manager,
     opener
   });
-  const editorServices = {
+  let editorServices = {
     factoryService: new CodeMirrorEditorFactory(),
     mimeTypeService: new CodeMirrorMimeTypeService()
   };
-  const wFactory = new FileEditorFactory({
+  let wFactory = new FileEditorFactory({
     editorServices,
     factoryOptions: {
       name: 'Editor',
@@ -87,18 +85,18 @@ function createApp(manager: ServiceManager.IManager): void {
   });
   docRegistry.addWidgetFactory(wFactory);
 
-  const commands = new CommandRegistry();
+  let commands = new CommandRegistry();
 
-  const fbModel = new FilterFileBrowserModel({
+  let fbModel = new FileBrowserModel({
     manager: docManager
   });
-  const fbWidget = new FileBrowser({
+  let fbWidget = new FileBrowser({
     id: 'filebrowser',
     model: fbModel
   });
 
   // Add a creator toolbar item.
-  const creator = new ToolbarButton({
+  let creator = new ToolbarButton({
     icon: addIcon,
     onClick: () => {
       void docManager
@@ -113,18 +111,18 @@ function createApp(manager: ServiceManager.IManager): void {
   });
   fbWidget.toolbar.insertItem(0, 'create', creator);
 
-  const panel = new SplitPanel();
+  let panel = new SplitPanel();
   panel.id = 'main';
   panel.addWidget(fbWidget);
   SplitPanel.setStretch(fbWidget, 0);
-  const dock = new DockPanel();
+  let dock = new DockPanel();
   panel.addWidget(dock);
   SplitPanel.setStretch(dock, 1);
   dock.spacing = 8;
 
   document.addEventListener('focus', event => {
     for (let i = 0; i < widgets.length; i++) {
-      const widget = widgets[i];
+      let widget = widgets[i];
       if (widget.node.contains(event.target as HTMLElement)) {
         activeWidget = widget;
         break;
@@ -153,7 +151,7 @@ function createApp(manager: ServiceManager.IManager): void {
   });
   commands.addCommand('file-save', {
     execute: () => {
-      const context = docManager.contextForWidget(activeWidget);
+      let context = docManager.contextForWidget(activeWidget);
       return context?.save();
     }
   });
@@ -219,7 +217,7 @@ function createApp(manager: ServiceManager.IManager): void {
   commands.addCommand('file-info-demo', {
     label: 'Info Demo',
     execute: () => {
-      const msg = 'The quick brown fox jumped over the lazy dog';
+      let msg = 'The quick brown fox jumped over the lazy dog';
       void showDialog({
         title: 'Cool Title',
         body: msg,
@@ -243,7 +241,7 @@ function createApp(manager: ServiceManager.IManager): void {
   });
 
   // Create a context menu.
-  const menu = new Menu({ commands });
+  let menu = new Menu({ commands });
   menu.addItem({ command: 'file-open' });
   menu.addItem({ command: 'file-rename' });
   menu.addItem({ command: 'file-remove' });
@@ -257,11 +255,11 @@ function createApp(manager: ServiceManager.IManager): void {
   menu.addItem({ command: 'file-info-demo' });
 
   // Add a context menu to the dir listing.
-  const node = fbWidget.node.getElementsByClassName('jp-DirListing-content')[0];
+  let node = fbWidget.node.getElementsByClassName('jp-DirListing-content')[0];
   node.addEventListener('contextmenu', (event: MouseEvent) => {
     event.preventDefault();
-    const x = event.clientX;
-    const y = event.clientY;
+    let x = event.clientX;
+    let y = event.clientY;
     menu.open(x, y);
   });
 
@@ -273,22 +271,22 @@ function createApp(manager: ServiceManager.IManager): void {
     panel.update();
   });
 
-  console.debug('Example started!');
+  console.log('Example started!');
 }
 
 /**
  * Create a non-functional dialog demo.
  */
 function dialogDemo(): void {
-  const body = document.createElement('div');
-  const input = document.createElement('input');
+  let body = document.createElement('div');
+  let input = document.createElement('input');
   input.value = 'Untitled.ipynb';
-  const selector = document.createElement('select');
-  const option0 = document.createElement('option');
+  let selector = document.createElement('select');
+  let option0 = document.createElement('option');
   option0.value = 'python';
   option0.text = 'Python 3';
   selector.appendChild(option0);
-  const option1 = document.createElement('option');
+  let option1 = document.createElement('option');
   option1.value = 'julia';
   option1.text = 'Julia';
   selector.appendChild(option1);

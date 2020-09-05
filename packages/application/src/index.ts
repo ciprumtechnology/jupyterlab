@@ -3,11 +3,7 @@
 
 export { ConnectionLost } from './connectionlost';
 
-export {
-  JupyterFrontEnd,
-  JupyterFrontEndPlugin,
-  JupyterFrontEndContextMenu
-} from './frontend';
+export { JupyterFrontEnd, JupyterFrontEndPlugin } from './frontend';
 
 export { JupyterLab } from './lab';
 
@@ -20,7 +16,5 @@ export { Router } from './router';
 export { ILabShell, LabShell } from './shell';
 
 export { ILabStatus } from './status';
-
-export { ITreePathUpdater } from './treepathupdater';
 
 export * from './tokens';

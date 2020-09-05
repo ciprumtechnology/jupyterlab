@@ -1,8 +1,6 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import { ITranslator } from '@jupyterlab/translation';
-
 import { Message, MessageLoop } from '@lumino/messaging';
 
 import { BoxLayout, Widget } from '@lumino/widgets';
@@ -24,8 +22,7 @@ import { Printing } from './printing';
  * This widget is automatically disposed when closed.
  * This widget ensures its own focus when activated.
  */
-export class MainAreaWidget<T extends Widget = Widget>
-  extends Widget
+export class MainAreaWidget<T extends Widget = Widget> extends Widget
   implements Printing.IPrintable {
   /**
    * Construct a new main area widget.
@@ -257,11 +254,6 @@ export namespace MainAreaWidget {
      * An optional promise for when the content is ready to be revealed.
      */
     reveal?: Promise<any>;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**

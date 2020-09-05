@@ -19,12 +19,12 @@ import 'codemirror/addon/mode/multiplex';
 CodeMirror.defineMode(
   'ipythongfm',
   (config: CodeMirror.EditorConfiguration, modeOptions?: any) => {
-    const gfmMode = CodeMirror.getMode(config, {
+    let gfmMode = CodeMirror.getMode(config, {
       name: 'gfm',
       // Override list3 with an under-used token, rather than `keyword`
       tokenTypeOverrides: { list3: 'string-2' }
     });
-    const texMode = CodeMirror.getMode(config, {
+    let texMode = CodeMirror.getMode(config, {
       name: 'stex',
       inMathMode: true
     });

@@ -72,13 +72,13 @@ function validateIOPubContent(
   msg: KernelMessage.IIOPubMessage
 ): asserts msg is KernelMessage.IIOPubMessage {
   if (msg.channel === 'iopub') {
-    const fields = IOPUB_CONTENT_FIELDS[msg.header.msg_type];
+    let fields = IOPUB_CONTENT_FIELDS[msg.header.msg_type];
     // Check for unknown message type.
     if (fields === undefined) {
       return;
     }
-    const names = Object.keys(fields);
-    const content = msg.content;
+    let names = Object.keys(fields);
+    let content = msg.content;
     for (let i = 0; i < names.length; i++) {
       let args = fields[names[i]];
       if (!Array.isArray(args)) {

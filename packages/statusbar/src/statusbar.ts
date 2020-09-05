@@ -31,11 +31,11 @@ export class StatusBar extends Widget implements IStatusBar {
     super();
     this.addClass(barStyle);
 
-    const rootLayout = (this.layout = new PanelLayout());
+    let rootLayout = (this.layout = new PanelLayout());
 
-    const leftPanel = (this._leftSide = new Panel());
-    const middlePanel = (this._middlePanel = new Panel());
-    const rightPanel = (this._rightSide = new Panel());
+    let leftPanel = (this._leftSide = new Panel());
+    let middlePanel = (this._middlePanel = new Panel());
+    let rightPanel = (this._rightSide = new Panel());
 
     leftPanel.addClass(sideStyle);
     leftPanel.addClass(leftSideStyle);
@@ -78,13 +78,13 @@ export class StatusBar extends Widget implements IStatusBar {
       fullStatusItem.activeStateChanged.connect(onActiveStateChanged);
     }
 
-    const rankItem = { id, rank };
+    let rankItem = { id, rank };
 
     fullStatusItem.item.addClass(itemStyle);
     this._statusItems[id] = fullStatusItem;
 
     if (align === 'left') {
-      const insertIndex = this._findInsertIndex(this._leftRankItems, rankItem);
+      let insertIndex = this._findInsertIndex(this._leftRankItems, rankItem);
       if (insertIndex === -1) {
         this._leftSide.addWidget(item);
         this._leftRankItems.push(rankItem);
@@ -93,7 +93,7 @@ export class StatusBar extends Widget implements IStatusBar {
         this._leftSide.insertWidget(insertIndex, item);
       }
     } else if (align === 'right') {
-      const insertIndex = this._findInsertIndex(this._rightRankItems, rankItem);
+      let insertIndex = this._findInsertIndex(this._rightRankItems, rankItem);
       if (insertIndex === -1) {
         this._rightSide.addWidget(item);
         this._rightRankItems.push(rankItem);

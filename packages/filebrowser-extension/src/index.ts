@@ -4,7 +4,6 @@
 import {
   ILabShell,
   ILayoutRestorer,
-  ITreePathUpdater,
   IRouter,
   JupyterFrontEnd,
   JupyterFrontEndPlugin
@@ -17,8 +16,7 @@ import {
   WidgetTracker,
   ICommandPalette,
   InputDialog,
-  showErrorMessage,
-  DOMUtils
+  showErrorMessage
 } from '@jupyterlab/apputils';
 
 import { PageConfig, PathExt, URLExt } from '@jupyterlab/coreutils';
@@ -26,7 +24,7 @@ import { PageConfig, PathExt, URLExt } from '@jupyterlab/coreutils';
 import { IDocumentManager } from '@jupyterlab/docmanager';
 
 import {
-  FilterFileBrowserModel,
+  FileBrowserModel,
   FileBrowser,
   FileUploadStatus,
   IFileBrowserFactory
@@ -43,8 +41,6 @@ import { ISettingRegistry } from '@jupyterlab/settingregistry';
 import { IStateDB } from '@jupyterlab/statedb';
 
 import { IStatusBar } from '@jupyterlab/statusbar';
-
-import { ITranslator } from '@jupyterlab/translation';
 
 import {
   addIcon,
@@ -126,10 +122,6 @@ namespace CommandIDs {
 
   export const toggleNavigateToCurrentDirectory =
     'filebrowser:toggle-navigate-to-current-directory';
-
-  export const toggleLastModified = 'filebrowser:toggle-last-modified';
-
-  export const search = 'filebrowser:search';
 }
 
 /**
@@ -143,9 +135,7 @@ const browser: JupyterFrontEndPlugin<void> = {
     IDocumentManager,
     ILabShell,
     ILayoutRestorer,
-    ISettingRegistry,
-    ITreePathUpdater,
-    ITranslator
+    ISettingRegistry
   ],
   optional: [ICommandPalette, IMainMenu],
   autoStart: true
@@ -158,7 +148,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
   activate: activateFactory,
   id: '@jupyterlab/filebrowser-extension:factory',
   provides: IFileBrowserFactory,
-  requires: [ILabShell, IDocumentManager, ITranslator],
+  requires: [IDocumentManager],
   optional: [IStateDB, IRouter, JupyterFrontEnd.ITreeResolver]
 };
 
@@ -176,7 +166,7 @@ const factory: JupyterFrontEndPlugin<IFileBrowserFactory> = {
 const shareFile: JupyterFrontEndPlugin<void> = {
   activate: activateShareFile,
   id: '@jupyterlab/filebrowser-extension:share-file',
-  requires: [IFileBrowserFactory, ITranslator],
+  requires: [IFileBrowserFactory],
   autoStart: true
 };
 
@@ -186,12 +176,11 @@ const shareFile: JupyterFrontEndPlugin<void> = {
 export const fileUploadStatus: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/filebrowser-extension:file-upload-status',
   autoStart: true,
-  requires: [IFileBrowserFactory, ITranslator],
+  requires: [IFileBrowserFactory],
   optional: [IStatusBar],
   activate: (
     app: JupyterFrontEnd,
     browser: IFileBrowserFactory,
-    translator: ITranslator,
     statusBar: IStatusBar | null
   ) => {
     if (!statusBar) {
@@ -199,8 +188,7 @@ export const fileUploadStatus: JupyterFrontEndPlugin<void> = {
       return;
     }
     const item = new FileUploadStatus({
-      tracker: browser.tracker,
-      translator
+      tracker: browser.tracker
     });
 
     statusBar.registerStatusItem(
@@ -238,22 +226,18 @@ export default plugins;
  */
 async function activateFactory(
   app: JupyterFrontEnd,
-  labShell: ILabShell,
   docManager: IDocumentManager,
-  translator: ITranslator,
   state: IStateDB | null,
   router: IRouter | null,
   tree: JupyterFrontEnd.ITreeResolver | null
 ): Promise<IFileBrowserFactory> {
-  const trans = translator.load('jupyterlab');
   const { commands } = app;
   const tracker = new WidgetTracker<FileBrowser>({ namespace });
   const createFileBrowser = (
     id: string,
     options: IFileBrowserFactory.IOptions = {}
   ) => {
-    const model = new FilterFileBrowserModel({
-      translator: translator,
+    const model = new FileBrowserModel({
       auto: options.auto ?? true,
       manager: docManager,
       driveName: options.driveName || '',
@@ -262,28 +246,15 @@ async function activateFactory(
         options.state === null ? undefined : options.state || state || undefined
     });
     const restore = options.restore;
-    const widget = new FileBrowser({ id, model, restore, translator });
+    const widget = new FileBrowser({ id, model, restore });
 
     // Add a launcher toolbar item.
-    const launcher = new ToolbarButton({
+    let launcher = new ToolbarButton({
       icon: addIcon,
       onClick: () => {
-        if (
-          labShell.mode === 'multiple-document' &&
-          commands.hasCommand('launcher:create')
-        ) {
-          return Private.createLauncher(commands, widget);
-        } else {
-          const newUrl = PageConfig.getUrl({
-            mode: labShell.mode,
-            workspace: PageConfig.defaultWorkspace,
-            treePath: model.path
-          });
-          window.open(newUrl, '_blank');
-        }
+        return Private.createLauncher(commands, widget);
       },
-      tooltip: trans.__('New Launcher'),
-      actualOnClick: true
+      tooltip: 'New Launcher'
     });
     widget.toolbar.insertItem(0, 'launch', launcher);
 
@@ -313,12 +284,9 @@ function activateBrowser(
   labShell: ILabShell,
   restorer: ILayoutRestorer,
   settingRegistry: ISettingRegistry,
-  treePathUpdater: ITreePathUpdater,
-  translator: ITranslator,
   commandPalette: ICommandPalette | null,
   mainMenu: IMainMenu | null
 ): void {
-  const trans = translator.load('jupyterlab');
   const browser = factory.defaultBrowser;
   const { commands } = app;
 
@@ -336,7 +304,6 @@ function activateBrowser(
     labShell,
     docManager,
     settingRegistry,
-    translator,
     commandPalette,
     mainMenu
   );
@@ -350,9 +317,9 @@ function activateBrowser(
     );
     if (binding) {
       const ks = CommandRegistry.formatKeystroke(binding.keys.join(' '));
-      browser.title.caption = trans.__('File Browser (%1)', ks);
+      browser.title.caption = `File Browser (${ks})`;
     } else {
-      browser.title.caption = trans.__('File Browser');
+      browser.title.caption = 'File Browser';
     }
   };
   updateBrowserTitle();
@@ -361,10 +328,9 @@ function activateBrowser(
   });
   labShell.add(browser, 'left', { rank: 100 });
 
-  // If the layout is a fresh session without saved data and not in single document
-  // mode, open file browser.
+  // If the layout is a fresh session without saved data, open file browser.
   void labShell.restored.then(layout => {
-    if (layout.fresh && labShell.mode !== 'single-document') {
+    if (layout.fresh) {
       void commands.execute(CommandIDs.showBrowser, void 0);
     }
   });
@@ -372,7 +338,7 @@ function activateBrowser(
   void Promise.all([app.restored, browser.model.restored]).then(() => {
     function maybeCreate() {
       // Create a launcher if there are no open items.
-      if (labShell.isEmpty('main') && commands.hasCommand('launcher:create')) {
+      if (labShell.isEmpty('main')) {
         void Private.createLauncher(commands, browser);
       }
     }
@@ -383,7 +349,6 @@ function activateBrowser(
     });
 
     let navigateToCurrentDirectory: boolean = false;
-    let useFuzzyFilter: boolean = true;
 
     void settingRegistry
       .load('@jupyterlab/filebrowser-extension:browser')
@@ -397,12 +362,6 @@ function activateBrowser(
         navigateToCurrentDirectory = settings.get('navigateToCurrentDirectory')
           .composite as boolean;
         browser.navigateToCurrentDirectory = navigateToCurrentDirectory;
-        settings.changed.connect(settings => {
-          useFuzzyFilter = settings.get('useFuzzyFilter').composite as boolean;
-          browser.useFuzzyFilter = useFuzzyFilter;
-        });
-        useFuzzyFilter = settings.get('useFuzzyFilter').composite as boolean;
-        browser.useFuzzyFilter = useFuzzyFilter;
       });
 
     // Whether to automatically navigate to a document's current directory
@@ -413,7 +372,7 @@ function activateBrowser(
         if (context) {
           const { path } = context;
           try {
-            await Private.navigateToPath(path, factory, translator);
+            await Private.navigateToPath(path, factory);
             labShell.currentWidget?.activate();
           } catch (reason) {
             console.warn(
@@ -425,20 +384,14 @@ function activateBrowser(
       }
     });
 
-    browser.model.pathChanged.connect((sender, args) => {
-      treePathUpdater(args.newValue);
-    });
-
     maybeCreate();
   });
 }
 
 function activateShareFile(
   app: JupyterFrontEnd,
-  factory: IFileBrowserFactory,
-  translator: ITranslator
+  factory: IFileBrowserFactory
 ): void {
-  const trans = translator.load('jupyterlab');
   const { commands } = app;
   const { tracker } = factory;
 
@@ -450,22 +403,13 @@ function activateShareFile(
         return;
       }
       const path = encodeURI(model.path);
-
-      Clipboard.copyToSystem(
-        URLExt.normalize(
-          PageConfig.getUrl({
-            mode: 'single-document',
-            workspace: PageConfig.defaultWorkspace,
-            treePath: path
-          })
-        )
-      );
+      Clipboard.copyToSystem(URLExt.join(PageConfig.getTreeShareUrl(), path));
     },
     isVisible: () =>
       !!tracker.currentWidget &&
       toArray(tracker.currentWidget.selectedItems()).length === 1,
     icon: linkIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Copy Shareable Link')
+    label: 'Copy Shareable Link'
   });
 }
 
@@ -478,11 +422,9 @@ function addCommands(
   labShell: ILabShell,
   docManager: IDocumentManager,
   settingRegistry: ISettingRegistry,
-  translator: ITranslator,
   commandPalette: ICommandPalette | null,
   mainMenu: IMainMenu | null
 ): void {
-  const trans = translator.load('jupyterlab');
   const { docRegistry: registry, commands } = app;
   const { defaultBrowser: browser, tracker } = factory;
 
@@ -495,7 +437,7 @@ function addCommands(
       }
     },
     icon: closeIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Delete'),
+    label: 'Delete',
     mnemonic: 0
   });
 
@@ -508,7 +450,7 @@ function addCommands(
       }
     },
     icon: copyIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Copy'),
+    label: 'Copy',
     mnemonic: 0
   });
 
@@ -521,7 +463,7 @@ function addCommands(
       }
     },
     icon: cutIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Cut')
+    label: 'Cut'
   });
 
   commands.addCommand(CommandIDs.download, {
@@ -533,7 +475,7 @@ function addCommands(
       }
     },
     icon: downloadIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Download')
+    label: 'Download'
   });
 
   commands.addCommand(CommandIDs.duplicate, {
@@ -545,7 +487,7 @@ function addCommands(
       }
     },
     icon: copyIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Duplicate')
+    label: 'Duplicate'
   });
 
   commands.addCommand(CommandIDs.hideBrowser, {
@@ -560,10 +502,9 @@ function addCommands(
   commands.addCommand(CommandIDs.goToPath, {
     execute: async args => {
       const path = (args.path as string) || '';
-      const showBrowser = !(args?.dontShowBrowser ?? false);
       try {
-        const item = await Private.navigateToPath(path, factory, translator);
-        if (item.type !== 'directory' && showBrowser) {
+        const item = await Private.navigateToPath(path, factory);
+        if (item.type !== 'directory') {
           const browserForPath = Private.getBrowserForPath(path, factory);
           if (browserForPath) {
             browserForPath.clearSelectedItems();
@@ -577,29 +518,22 @@ function addCommands(
       } catch (reason) {
         console.warn(`${CommandIDs.goToPath} failed to go to: ${path}`, reason);
       }
-      if (showBrowser) {
-        return commands.execute(CommandIDs.showBrowser, { path });
-      }
+      return commands.execute(CommandIDs.showBrowser, { path });
     }
   });
 
   commands.addCommand(CommandIDs.openPath, {
-    label: args =>
-      args.path ? trans.__('Open %1', args.path) : trans.__('Open from Path…'),
-    caption: args =>
-      args.path ? trans.__('Open %1', args.path) : trans.__('Open from path'),
-    execute: async args => {
-      let path: string | undefined;
-      if (args?.path) {
-        path = args.path as string;
-      } else {
+    label: args => (args.path ? `Open ${args.path}` : 'Open from Path…'),
+    caption: args => (args.path ? `Open ${args.path}` : 'Open from path'),
+    execute: async ({ path }: { path?: string }) => {
+      if (!path) {
         path =
           (
             await InputDialog.getText({
-              label: trans.__('Path'),
+              label: 'Path',
               placeholder: '/path/relative/to/jlab/root',
-              title: trans.__('Open Path'),
-              okLabel: trans.__('Open')
+              title: 'Open Path',
+              okLabel: 'Open'
             })
           ).value ?? undefined;
       }
@@ -607,7 +541,7 @@ function addCommands(
         return;
       }
       try {
-        const trailingSlash = path !== '/' && path.endsWith('/');
+        let trailingSlash = path !== '/' && path.endsWith('/');
         if (trailingSlash) {
           // The normal contents service errors on paths ending in slash
           path = path.slice(0, path.length - 1);
@@ -620,19 +554,16 @@ function addCommands(
         if (trailingSlash && item.type !== 'directory') {
           throw new Error(`Path ${path}/ is not a directory`);
         }
-        await commands.execute(CommandIDs.goToPath, {
-          path,
-          dontShowBrowser: args.dontShowBrowser
-        });
+        await commands.execute(CommandIDs.goToPath, { path });
         if (item.type === 'directory') {
           return;
         }
         return commands.execute('docmanager:open', { path });
       } catch (reason) {
         if (reason.response && reason.response.status === 404) {
-          reason.message = trans.__('Could not find path: %1', path);
+          reason.message = `Could not find path: ${path}`;
         }
-        return showErrorMessage(trans.__('Cannot open'), reason);
+        return showErrorMessage('Cannot open', reason);
       }
     }
   });
@@ -640,7 +571,7 @@ function addCommands(
   if (commandPalette) {
     commandPalette.addItem({
       command: CommandIDs.openPath,
-      category: trans.__('File Operations')
+      category: 'File Operations'
     });
   }
 
@@ -682,9 +613,7 @@ function addCommands(
         return folderIcon.bindprops({ stylesheet: 'menuItem' });
       }
     },
-    // FIXME-TRANS: Is this localizable?
-    label: args =>
-      (args['label'] || args['factory'] || trans.__('Open')) as string,
+    label: args => (args['label'] || args['factory'] || 'Open') as string,
     mnemonic: 0
   });
 
@@ -707,7 +636,7 @@ function addCommands(
       );
     },
     icon: addIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Open in New Browser Tab'),
+    label: 'Open in New Browser Tab',
     mnemonic: 0
   });
 
@@ -725,7 +654,7 @@ function addCommands(
         });
     },
     icon: copyIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Copy Download Link'),
+    label: 'Copy Download Link',
     mnemonic: 0
   });
 
@@ -738,7 +667,7 @@ function addCommands(
       }
     },
     icon: pasteIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Paste'),
+    label: 'Paste',
     mnemonic: 0
   });
 
@@ -751,7 +680,7 @@ function addCommands(
       }
     },
     icon: newFolderIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('New Folder')
+    label: 'New Folder'
   });
 
   commands.addCommand(CommandIDs.createNewFile, {
@@ -766,7 +695,7 @@ function addCommands(
       });
     },
     icon: textEditorIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('New File')
+    label: 'New File'
   });
 
   commands.addCommand(CommandIDs.createNewMarkdownFile, {
@@ -781,7 +710,7 @@ function addCommands(
       });
     },
     icon: markdownIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('New Markdown File')
+    label: 'New Markdown File'
   });
 
   commands.addCommand(CommandIDs.rename, {
@@ -793,7 +722,7 @@ function addCommands(
       }
     },
     icon: editIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Rename'),
+    label: 'Rename',
     mnemonic: 0
   });
 
@@ -814,7 +743,7 @@ function addCommands(
       !!tracker.currentWidget &&
       tracker.currentWidget.selectedItems().next !== undefined,
     icon: fileIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Copy Path')
+    label: 'Copy Path'
   });
 
   commands.addCommand(CommandIDs.showBrowser, {
@@ -832,7 +761,7 @@ function addCommands(
         return;
       } else {
         const areas: ILabShell.Area[] = ['left', 'right'];
-        for (const area of areas) {
+        for (let area of areas) {
           const it = labShell.widgets(area);
           let widget = it.next();
           while (widget) {
@@ -856,7 +785,7 @@ function addCommands(
       }
     },
     icon: stopIcon.bindprops({ stylesheet: 'menuItem' }),
-    label: trans.__('Shut Down Kernel')
+    label: 'Shut Down Kernel'
   });
 
   commands.addCommand(CommandIDs.toggleBrowser, {
@@ -870,12 +799,12 @@ function addCommands(
   });
 
   commands.addCommand(CommandIDs.createLauncher, {
-    label: trans.__('New Launcher'),
+    label: 'New Launcher',
     execute: () => Private.createLauncher(commands, browser)
   });
 
   commands.addCommand(CommandIDs.toggleNavigateToCurrentDirectory, {
-    label: trans.__('Show Active File in File Browser'),
+    label: 'Show Active File in File Browser',
     isToggled: () => browser.navigateToCurrentDirectory,
     execute: () => {
       const value = !browser.navigateToCurrentDirectory;
@@ -888,33 +817,6 @@ function addCommands(
     }
   });
 
-  commands.addCommand(CommandIDs.toggleLastModified, {
-    label: trans.__('Toggle Last Modified Column'),
-    execute: () => {
-      const header = DOMUtils.findElement(document.body, 'jp-id-modified');
-      const column = DOMUtils.findElements(
-        document.body,
-        'jp-DirListing-itemModified'
-      );
-      if (header.classList.contains('jp-LastModified-hidden')) {
-        header.classList.remove('jp-LastModified-hidden');
-        for (let i = 0; i < column.length; i++) {
-          column[i].classList.remove('jp-LastModified-hidden');
-        }
-      } else {
-        header.classList.add('jp-LastModified-hidden');
-        for (let i = 0; i < column.length; i++) {
-          column[i].classList.add('jp-LastModified-hidden');
-        }
-      }
-    }
-  });
-
-  commands.addCommand(CommandIDs.search, {
-    label: trans.__('Search on File Names'),
-    execute: () => alert('search')
-  });
-
   if (mainMenu) {
     mainMenu.settingsMenu.addGroup(
       [{ command: CommandIDs.toggleNavigateToCurrentDirectory }],
@@ -925,7 +827,7 @@ function addCommands(
   if (commandPalette) {
     commandPalette.addItem({
       command: CommandIDs.toggleNavigateToCurrentDirectory,
-      category: trans.__('File Operations')
+      category: 'File Operations'
     });
   }
 
@@ -940,7 +842,7 @@ function addCommands(
 
       // get the widget factories that could be used to open all of the items
       // in the current filebrowser selection
-      const factories = tracker.currentWidget
+      let factories = tracker.currentWidget
         ? OpenWithMenu._intersection(
             map(tracker.currentWidget.selectedItems(), i => {
               return OpenWithMenu._getFactories(i);
@@ -962,7 +864,7 @@ function addCommands(
     }
 
     static _getFactories(item: Contents.IModel): Array<string> {
-      const factories = registry
+      let factories = registry
         .preferredWidgetFactories(item.path)
         .map(f => f.name);
       const notebookFactory = registry.getWidgetFactory('notebook')?.name;
@@ -979,14 +881,14 @@ function addCommands(
 
     static _intersection<T>(iter: IIterator<Array<T>>): Set<T> | void {
       // pop the first element of iter
-      const first = iter.next();
+      let first = iter.next();
       // first will be undefined if iter is empty
       if (!first) {
         return;
       }
 
       // "initialize" the intersection from first
-      const isect = new Set(first);
+      let isect = new Set(first);
       // reduce over the remaining elements of iter
       return reduce(
         iter,
@@ -1040,7 +942,7 @@ function addCommands(
   });
 
   const openWith = new OpenWithMenu({ commands });
-  openWith.title.label = trans.__('Open With');
+  openWith.title.label = 'Open With';
   app.contextMenu.addItem({
     type: 'submenu',
     submenu: openWith,
@@ -1107,11 +1009,6 @@ function addCommands(
     selector: selectorNotDir,
     rank: 13
   });
-  app.contextMenu.addItem({
-    command: CommandIDs.toggleLastModified,
-    selector: '.jp-DirListing-header',
-    rank: 14
-  });
 }
 
 /**
@@ -1150,7 +1047,7 @@ namespace Private {
     const driveName = browser.model.manager.services.contents.driveName(path);
 
     if (driveName) {
-      const browserForPath = tracker.find(
+      let browserForPath = tracker.find(
         _path => _path.model.driveName === driveName
       );
 
@@ -1174,19 +1071,17 @@ namespace Private {
    */
   export async function navigateToPath(
     path: string,
-    factory: IFileBrowserFactory,
-    translator: ITranslator
+    factory: IFileBrowserFactory
   ): Promise<Contents.IModel> {
-    const trans = translator.load('jupyterlab');
     const browserForPath = Private.getBrowserForPath(path, factory);
     if (!browserForPath) {
-      throw new Error(trans.__('No browser for path'));
+      throw new Error('No browser for path');
     }
     const { services } = browserForPath.model.manager;
     const localPath = services.contents.localPath(path);
 
     await services.ready;
-    const item = await services.contents.get(path, { content: false });
+    let item = await services.contents.get(path, { content: false });
     const { model } = browserForPath;
     await model.restored;
     if (item.type === 'directory') {
@@ -1225,16 +1120,10 @@ namespace Private {
         // Restore the model without populating it.
         await browser.model.restore(browser.id, false);
         if (paths.file) {
-          await commands.execute(CommandIDs.openPath, {
-            path: paths.file,
-            dontShowBrowser: true
-          });
+          await commands.execute(CommandIDs.openPath, { path: paths.file });
         }
         if (paths.browser) {
-          await commands.execute(CommandIDs.openPath, {
-            path: paths.browser,
-            dontShowBrowser: true
-          });
+          await commands.execute(CommandIDs.openPath, { path: paths.browser });
         }
       } else {
         await browser.model.restore(browser.id);

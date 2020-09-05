@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -11,7 +11,7 @@ import packageJson from 'package-json';
 import commander from 'commander';
 import semver from 'semver';
 
-const versionCache = new Map();
+let versionCache = new Map();
 
 /**
  * Matches a simple semver range, where the version number could be an npm tag.
@@ -49,13 +49,13 @@ async function getSpecifier(
 
   // A tag with no sigil adopts the sigil from the current specification
   if (!suggestedSigil) {
-    const match = currentSpecifier.match(SEMVER_RANGE);
+    let match = currentSpecifier.match(SEMVER_RANGE);
     if (match === null) {
       throw Error(
         `Current version range is not recognized: ${currentSpecifier}`
       );
     }
-    const [, currentSigil] = match;
+    let [, currentSigil] = match;
     if (currentSigil) {
       suggestedSigil = currentSigil;
     }
@@ -64,19 +64,19 @@ async function getSpecifier(
 }
 
 async function getVersion(pkg: string, specifier: string) {
-  const key = JSON.stringify([pkg, specifier]);
+  let key = JSON.stringify([pkg, specifier]);
   if (versionCache.has(key)) {
     return versionCache.get(key);
   }
   if (semver.validRange(specifier) === null) {
     // We have a tag, with possibly a range specifier, such as ^latest
-    const match = specifier.match(SEMVER_RANGE);
+    let match = specifier.match(SEMVER_RANGE);
     if (match === null) {
       throw Error(`Invalid version specifier: ${specifier}`);
     }
 
     // Look up the actual version corresponding to the tag
-    const { version } = await packageJson(pkg, { version: match[2] });
+    let { version } = await packageJson(pkg, { version: match[2] });
     specifier = match[1] + version;
   }
   versionCache.set(key, specifier);
@@ -112,11 +112,11 @@ async function handleDependency(
   suggestedSpecifier: string,
   minimal: boolean
 ): Promise<{ updated: boolean; log: string[] }> {
-  const log = [];
+  let log = [];
   let updated = false;
-  const oldRange = dependencies[dep];
-  const specifier = await getSpecifier(oldRange, suggestedSpecifier);
-  const newRange = await getVersion(dep, specifier);
+  let oldRange = dependencies[dep];
+  let specifier = await getSpecifier(oldRange, suggestedSpecifier);
+  let newRange = await getVersion(dep, specifier);
 
   if (minimal && subset(newRange, oldRange)) {
     log.push(`SKIPPING ${dep} ${oldRange} -> ${newRange}`);
@@ -139,7 +139,7 @@ async function handlePackage(
   minimal = false
 ) {
   let fileUpdated = false;
-  const fileLog: string[] = [];
+  let fileLog: string[] = [];
 
   // Read in the package.json.
   packagePath = path.join(packagePath, 'package.json');
@@ -147,17 +147,17 @@ async function handlePackage(
   try {
     data = utils.readJSONFile(packagePath);
   } catch (e) {
-    console.debug('Skipping package ' + packagePath);
+    console.log('Skipping package ' + packagePath);
     return;
   }
 
   // Update dependencies as appropriate.
-  for (const dtype of ['dependencies', 'devDependencies']) {
-    const deps = data[dtype] || {};
+  for (let dtype of ['dependencies', 'devDependencies']) {
+    let deps = data[dtype] || {};
     if (typeof name === 'string') {
-      const dep = name;
+      let dep = name;
       if (dep in deps) {
-        const { updated, log } = await handleDependency(
+        let { updated, log } = await handleDependency(
           deps,
           dep,
           specifier,
@@ -169,11 +169,11 @@ async function handlePackage(
         fileLog.push(...log);
       }
     } else {
-      const keys = Object.keys(deps);
+      let keys = Object.keys(deps);
       keys.sort();
-      for (const dep of keys) {
+      for (let dep of keys) {
         if (dep.match(name)) {
-          const { updated, log } = await handleDependency(
+          let { updated, log } = await handleDependency(
             deps,
             dep,
             specifier,
@@ -189,9 +189,9 @@ async function handlePackage(
   }
 
   if (fileLog.length > 0) {
-    console.debug(packagePath);
-    console.debug(fileLog.join('\n'));
-    console.debug();
+    console.log(packagePath);
+    console.log(fileLog.join('\n'));
+    console.log();
   }
 
   // Write the file back to disk.
@@ -211,15 +211,15 @@ commander
   .arguments('<package> [versionspec]')
   .action(
     async (name: string | RegExp, version: string = '^latest', args: any) => {
-      const basePath = path.resolve(args.path || '.');
-      const pkg = args.regex ? new RegExp(name) : name;
+      let basePath = path.resolve(args.path || '.');
+      let pkg = args.regex ? new RegExp(name) : name;
 
       if (args.lerna) {
-        const paths = utils.getLernaPaths(basePath).sort();
+        let paths = utils.getLernaPaths(basePath).sort();
 
         // We use a loop instead of Promise.all so that the output is in
         // alphabetical order.
-        for (const pkgPath of paths) {
+        for (let pkgPath of paths) {
           await handlePackage(pkg, version, pkgPath, args.dryRun, args.minimal);
         }
       }
@@ -227,8 +227,8 @@ commander
     }
   );
 
-commander.on('--help', function () {
-  console.debug(`
+commander.on('--help', function() {
+  console.log(`
 Examples
 --------
 

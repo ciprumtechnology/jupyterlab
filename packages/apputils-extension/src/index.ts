@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -21,7 +21,7 @@ import {
   sessionContextDialogs
 } from '@jupyterlab/apputils';
 
-import { URLExt, PageConfig } from '@jupyterlab/coreutils';
+import { URLExt } from '@jupyterlab/coreutils';
 
 import { IStateDB, StateDB } from '@jupyterlab/statedb';
 
@@ -37,10 +37,7 @@ import { Palette } from './palette';
 
 import { settingsPlugin } from './settingsplugin';
 
-import { themesPlugin, themesPaletteMenuPlugin } from './themesplugins';
-
-import { workspacesPlugin } from './workspacesplugin';
-import { ITranslator } from '@jupyterlab/translation';
+import { themesPlugin, themesPaletteMenuPlugin } from './themeplugins';
 
 /**
  * The interval in milliseconds before recover options appear during splash.
@@ -66,13 +63,10 @@ namespace CommandIDs {
  * The default command palette extension.
  */
 const palette: JupyterFrontEndPlugin<ICommandPalette> = {
+  activate: Palette.activate,
   id: '@jupyterlab/apputils-extension:palette',
-  autoStart: true,
-  requires: [ITranslator],
   provides: ICommandPalette,
-  activate: (app: JupyterFrontEnd, translator: ITranslator) => {
-    return Palette.activate(app, translator);
-  }
+  autoStart: true
 };
 
 /**
@@ -85,16 +79,10 @@ const palette: JupyterFrontEndPlugin<ICommandPalette> = {
  * in the application load cycle.
  */
 const paletteRestorer: JupyterFrontEndPlugin<void> = {
+  activate: Palette.restore,
   id: '@jupyterlab/apputils-extension:palette-restorer',
-  autoStart: true,
-  requires: [ILayoutRestorer, ITranslator],
-  activate: (
-    app: JupyterFrontEnd,
-    restorer: ILayoutRestorer,
-    translator: ITranslator
-  ) => {
-    Palette.restore(app, restorer, translator);
-  }
+  requires: [ILayoutRestorer],
+  autoStart: true
 };
 
 /**
@@ -106,21 +94,20 @@ const resolver: JupyterFrontEndPlugin<IWindowResolver> = {
   provides: IWindowResolver,
   requires: [JupyterFrontEnd.IPaths, IRouter],
   activate: async (
-    app: JupyterFrontEnd,
+    _: JupyterFrontEnd,
     paths: JupyterFrontEnd.IPaths,
     router: IRouter
   ) => {
-    const { hash, search } = router.current;
+    const { hash, path, search } = router.current;
     const query = URLExt.queryStringToObject(search || '');
     const solver = new WindowResolver();
-    const workspace = PageConfig.getOption('workspace');
-    const treePath = PageConfig.getOption('treePath');
-    const mode =
-      PageConfig.getOption('mode') === 'multiple-document' ? 'lab' : 'doc';
-    // This is used as a key in local storage to refer to workspaces, either the name
-    // of the workspace or the string PageConfig.defaultWorkspace. Both lab and doc modes share the same workspace.
-    const candidate = workspace ? workspace : PageConfig.defaultWorkspace;
-    const rest = treePath ? URLExt.join('tree', treePath) : '';
+    const { urls } = paths;
+    const match = path.match(new RegExp(`^${urls.workspaces}\/([^?\/]+)`));
+    const workspace = (match && decodeURIComponent(match[1])) || '';
+    const candidate = Private.candidate(paths, workspace);
+    const rest = workspace
+      ? path.replace(new RegExp(`^${urls.workspaces}\/${workspace}`), '')
+      : path.replace(new RegExp(`^${urls.app}\/?`), '');
     try {
       await solver.resolve(candidate);
       return solver;
@@ -129,15 +116,14 @@ const resolver: JupyterFrontEndPlugin<IWindowResolver> = {
       // that never resolves to prevent the application from loading plugins
       // that rely on `IWindowResolver`.
       return new Promise<IWindowResolver>(() => {
-        const { base } = paths.urls;
+        const { base, workspaces } = paths.urls;
         const pool =
           'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
         const random = pool[Math.floor(Math.random() * pool.length)];
-        let path = URLExt.join(base, mode, 'workspaces', `auto-${random}`);
-        path = rest ? URLExt.join(path, URLExt.encodeParts(rest)) : path;
+        const path = URLExt.join(base, workspaces, `auto-${random}`, rest);
 
-        // Reset the workspace on load.
-        query['reset'] = '';
+        // Clone the originally requested workspace after redirecting.
+        query['clone'] = workspace;
 
         const url = path + URLExt.objectToQueryString(query) + (hash || '');
         router.navigate(url, { hard: true });
@@ -152,10 +138,8 @@ const resolver: JupyterFrontEndPlugin<IWindowResolver> = {
 const splash: JupyterFrontEndPlugin<ISplashScreen> = {
   id: '@jupyterlab/apputils-extension:splash',
   autoStart: true,
-  requires: [ITranslator],
   provides: ISplashScreen,
-  activate: (app: JupyterFrontEnd, translator: ITranslator) => {
-    const trans = translator.load('jupyterlab');
+  activate: app => {
     const { commands, restored } = app;
 
     // Create splash element and populate it.
@@ -198,12 +182,12 @@ const splash: JupyterFrontEndPlugin<ISplashScreen> = {
         }
 
         dialog = new Dialog({
-          title: trans.__('Loading...'),
-          body: trans.__(`The loading screen is taking a long time. 
-Would you like to clear the workspace or keep waiting?`),
+          title: 'Loading...',
+          body: `The loading screen is taking a long time.
+          Would you like to clear the workspace or keep waiting?`,
           buttons: [
-            Dialog.cancelButton({ label: trans.__('Keep Waiting') }),
-            Dialog.warnButton({ label: trans.__('Clear Workspace') })
+            Dialog.cancelButton({ label: 'Keep Waiting' }),
+            Dialog.warnButton({ label: 'Clear Workspace' })
           ]
         });
 
@@ -264,11 +248,9 @@ Would you like to clear the workspace or keep waiting?`),
 const print: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/apputils-extension:print',
   autoStart: true,
-  requires: [ITranslator],
-  activate: (app: JupyterFrontEnd, translator: ITranslator) => {
-    const trans = translator.load('jupyterlab');
+  activate: (app: JupyterFrontEnd) => {
     app.commands.addCommand(CommandIDs.print, {
-      label: trans.__('Print...'),
+      label: 'Print...',
       isEnabled: () => {
         const widget = app.shell.currentWidget;
         return Printing.getPrintFunction(widget) !== null;
@@ -296,18 +278,15 @@ const state: JupyterFrontEndPlugin<IStateDB> = {
   id: '@jupyterlab/apputils-extension:state',
   autoStart: true,
   provides: IStateDB,
-  requires: [JupyterFrontEnd.IPaths, IRouter, ITranslator],
+  requires: [JupyterFrontEnd.IPaths, IRouter],
   optional: [ISplashScreen, IWindowResolver],
   activate: (
     app: JupyterFrontEnd,
     paths: JupyterFrontEnd.IPaths,
     router: IRouter,
-    translator: ITranslator,
     splash: ISplashScreen | null,
     resolver: IWindowResolver | null
   ) => {
-    const trans = translator.load('jupyterlab');
-
     if (resolver === null) {
       return new StateDB();
     }
@@ -343,7 +322,7 @@ const state: JupyterFrontEndPlugin<IStateDB> = {
           typeof query['clone'] === 'string'
             ? query['clone'] === ''
               ? URLExt.join(urls.base, urls.app)
-              : URLExt.join(urls.base, urls.app, 'workspaces', query['clone'])
+              : URLExt.join(urls.base, urls.workspaces, query['clone'])
             : null;
         const source = clone || workspace || null;
 
@@ -362,7 +341,7 @@ const state: JupyterFrontEndPlugin<IStateDB> = {
             transform.resolve({ type: 'overwrite', contents: saved.data });
           }
         } catch ({ message }) {
-          console.warn(`Fetching workspace "${workspace}" failed.`, message);
+          console.log(`Fetching workspace "${workspace}" failed.`, message);
 
           // If the workspace does not exist, cancel the data transformation
           // and save a workspace with the current user state data.
@@ -393,13 +372,11 @@ const state: JupyterFrontEndPlugin<IStateDB> = {
     });
 
     commands.addCommand(CommandIDs.reset, {
-      label: trans.__('Reset Application State'),
-      execute: async ({ reload }: { reload: boolean }) => {
+      label: 'Reset Application State',
+      execute: async () => {
         await db.clear();
         await save.invoke();
-        if (reload) {
-          router.reload();
-        }
+        router.reload();
       }
     });
 
@@ -433,7 +410,10 @@ const state: JupyterFrontEndPlugin<IStateDB> = {
         delete query['reset'];
 
         const url = path + URLExt.objectToQueryString(query) + hash;
-        const cleared = db.clear().then(() => save.invoke());
+        const cleared = db
+          .clear()
+          .then(() => save.invoke())
+          .then(() => router.stop);
 
         // After the state has been reset, navigate to the URL.
         if (clone) {
@@ -484,20 +464,18 @@ const sessionDialogs: JupyterFrontEndPlugin<ISessionContextDialogs> = {
  */
 const utilityCommands: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/apputils-extension:utilityCommands',
-  requires: [ITranslator],
   autoStart: true,
-  activate: (app: JupyterFrontEnd, translator: ITranslator) => {
-    const trans = translator.load('jupyterlab');
+  activate: app => {
     const { commands } = app;
     commands.addCommand(CommandIDs.runFirstEnabled, {
-      label: trans.__('Run First Enabled Command'),
+      label: 'Run First Enabled Command',
       execute: args => {
         const commands: string[] = args.commands as string[];
         const commandArgs: any = args.args;
         const argList = Array.isArray(args);
         for (let i = 0; i < commands.length; i++) {
-          const cmd = commands[i];
-          const arg = argList ? commandArgs[i] : commandArgs;
+          let cmd = commands[i];
+          let arg = argList ? commandArgs[i] : commandArgs;
           if (app.commands.isEnabled(cmd, arg)) {
             return app.commands.execute(cmd, arg);
           }
@@ -521,7 +499,27 @@ const plugins: JupyterFrontEndPlugin<any>[] = [
   sessionDialogs,
   themesPlugin,
   themesPaletteMenuPlugin,
-  utilityCommands,
-  workspacesPlugin
+  utilityCommands
 ];
 export default plugins;
+
+/**
+ * The namespace for module private data.
+ */
+namespace Private {
+  /**
+   * Generate a workspace name candidate.
+   *
+   * @param workspace - A potential workspace name parsed from the URL.
+   *
+   * @returns A workspace name candidate.
+   */
+  export function candidate(
+    { urls }: JupyterFrontEnd.IPaths,
+    workspace = ''
+  ): string {
+    return workspace
+      ? URLExt.join(urls.workspaces, workspace)
+      : URLExt.join(urls.app);
+  }
+}

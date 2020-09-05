@@ -20,14 +20,14 @@ export class CodeMirrorMimeTypeService implements IEditorMimeTypeService {
    * If a mime type cannot be found returns the defaul mime type `text/plain`, never `null`.
    */
   getMimeTypeByLanguage(info: nbformat.ILanguageInfoMetadata): string {
-    const ext = info.file_extension || '';
+    let ext = info.file_extension || '';
     return Mode.findBest(
       (info.codemirror_mode as any) || {
         mimetype: info.mimetype,
         name: info.name,
         ext: [ext.split('.').slice(-1)[0]]
       }
-    ).mime as string;
+    ).mime;
   }
 
   /**
@@ -43,7 +43,7 @@ export class CodeMirrorMimeTypeService implements IEditorMimeTypeService {
     } else if (ext === '.md') {
       return 'text/x-ipythongfm';
     }
-    const mode = Mode.findByFileName(path) || Mode.findBest('');
-    return mode.mime as string;
+    let mode = Mode.findByFileName(path) || Mode.findBest('');
+    return mode.mime;
   }
 }

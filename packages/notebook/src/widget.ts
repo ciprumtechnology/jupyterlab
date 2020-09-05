@@ -19,8 +19,6 @@ import { PanelLayout, Widget } from '@lumino/widgets';
 
 import { h, VirtualDOM } from '@lumino/virtualdom';
 
-import { ElementExt } from '@lumino/domutils';
-
 import {
   ICellModel,
   Cell,
@@ -216,7 +214,7 @@ export class StaticNotebook extends Widget {
     if (this._model === newValue) {
       return;
     }
-    const oldValue = this._model;
+    let oldValue = this._model;
     this._model = newValue;
 
     if (oldValue && oldValue.modelDB.isCollaborative) {
@@ -369,7 +367,7 @@ export class StaticNotebook extends Widget {
     oldValue: INotebookModel | null,
     newValue: INotebookModel | null
   ): void {
-    const layout = this.layout as PanelLayout;
+    let layout = this.layout as PanelLayout;
     if (oldValue) {
       oldValue.cells.changed.disconnect(this._onCellsChanged, this);
       oldValue.metadata.changed.disconnect(this.onMetadataChanged, this);
@@ -385,7 +383,7 @@ export class StaticNotebook extends Widget {
       return;
     }
     this._updateMimetype();
-    const cells = newValue.cells;
+    let cells = newValue.cells;
     if (!cells.length) {
       cells.push(
         newValue.contentFactory.createCell(this.notebookConfig.defaultCell, {})
@@ -475,7 +473,7 @@ export class StaticNotebook extends Widget {
         widget = this._createRawCell(cell as IRawCellModel);
     }
     widget.addClass(NB_CELL_CLASS);
-    const layout = this.layout as PanelLayout;
+    let layout = this.layout as PanelLayout;
     layout.insertWidget(index, widget);
     this.onCellInserted(index, widget);
   }
@@ -484,10 +482,10 @@ export class StaticNotebook extends Widget {
    * Create a code cell widget from a code cell model.
    */
   private _createCodeCell(model: ICodeCellModel): CodeCell {
-    const rendermime = this.rendermime;
-    const contentFactory = this.contentFactory;
+    let rendermime = this.rendermime;
+    let contentFactory = this.contentFactory;
     const editorConfig = this.editorConfig.code;
-    const options = {
+    let options = {
       editorConfig,
       model,
       rendermime,
@@ -505,10 +503,10 @@ export class StaticNotebook extends Widget {
    * Create a markdown cell widget from a markdown cell model.
    */
   private _createMarkdownCell(model: IMarkdownCellModel): MarkdownCell {
-    const rendermime = this.rendermime;
-    const contentFactory = this.contentFactory;
+    let rendermime = this.rendermime;
+    let contentFactory = this.contentFactory;
     const editorConfig = this.editorConfig.markdown;
-    const options = {
+    let options = {
       editorConfig,
       model,
       rendermime,
@@ -525,9 +523,9 @@ export class StaticNotebook extends Widget {
    * Create a raw cell widget from a raw cell model.
    */
   private _createRawCell(model: IRawCellModel): RawCell {
-    const contentFactory = this.contentFactory;
+    let contentFactory = this.contentFactory;
     const editorConfig = this.editorConfig.raw;
-    const options = {
+    let options = {
       editorConfig,
       model,
       contentFactory,
@@ -543,7 +541,7 @@ export class StaticNotebook extends Widget {
    * Move a cell widget.
    */
   private _moveCell(fromIndex: number, toIndex: number): void {
-    const layout = this.layout as PanelLayout;
+    let layout = this.layout as PanelLayout;
     layout.insertWidget(toIndex, layout.widgets[fromIndex]);
     this.onCellMoved(fromIndex, toIndex);
   }
@@ -552,8 +550,8 @@ export class StaticNotebook extends Widget {
    * Remove a cell widget.
    */
   private _removeCell(index: number): void {
-    const layout = this.layout as PanelLayout;
-    const widget = layout.widgets[index] as Cell;
+    let layout = this.layout as PanelLayout;
+    let widget = layout.widgets[index] as Cell;
     widget.parent = null;
     this.onCellRemoved(index, widget);
     widget.dispose();
@@ -563,7 +561,7 @@ export class StaticNotebook extends Widget {
    * Update the mimetype of the notebook.
    */
   private _updateMimetype(): void {
-    const info = this._model?.metadata.get(
+    let info = this._model?.metadata.get(
       'language_info'
     ) as nbformat.ILanguageInfoMetadata;
     if (!info) {
@@ -584,8 +582,8 @@ export class StaticNotebook extends Widget {
     // If there are selections corresponding to non-collaborators,
     // they are stale and should be removed.
     for (let i = 0; i < this.widgets.length; i++) {
-      const cell = this.widgets[i];
-      for (const key of cell.model.selections.keys()) {
+      let cell = this.widgets[i];
+      for (let key of cell.model.selections.keys()) {
         if (false === this._model?.modelDB?.collaborators?.has(key)) {
           cell.model.selections.delete(key);
         }
@@ -781,8 +779,7 @@ export namespace StaticNotebook {
   /**
    * The default implementation of an `IContentFactory`.
    */
-  export class ContentFactory
-    extends Cell.ContentFactory
+  export class ContentFactory extends Cell.ContentFactory
     implements IContentFactory {
     /**
      * Create a new code cell widget.
@@ -895,7 +892,7 @@ export class Notebook extends StaticNotebook {
     return this._mode;
   }
   set mode(newValue: NotebookMode) {
-    const activeCell = this.activeCell;
+    let activeCell = this.activeCell;
     if (!activeCell) {
       newValue = 'command';
     }
@@ -905,7 +902,7 @@ export class Notebook extends StaticNotebook {
     }
     // Post an update request.
     this.update();
-    const oldValue = this._mode;
+    let oldValue = this._mode;
     this._mode = newValue;
 
     if (newValue === 'edit') {
@@ -939,7 +936,7 @@ export class Notebook extends StaticNotebook {
     return this.model.cells.length ? this._activeCellIndex : -1;
   }
   set activeCellIndex(newValue: number) {
-    const oldValue = this._activeCellIndex;
+    let oldValue = this._activeCellIndex;
     if (!this.model || !this.model.cells.length) {
       newValue = -1;
     } else {
@@ -948,7 +945,7 @@ export class Notebook extends StaticNotebook {
     }
 
     this._activeCellIndex = newValue;
-    const cell = this.widgets[newValue];
+    let cell = this.widgets[newValue];
     if (cell !== this._activeCell) {
       // Post an update request.
       this.update();
@@ -1051,7 +1048,7 @@ export class Notebook extends StaticNotebook {
       this._selectionChanged.emit(void 0);
     }
     // Make sure we have a valid active cell.
-    this.activeCellIndex = this.activeCellIndex; // eslint-disable-line
+    this.activeCellIndex = this.activeCellIndex;
     this.update();
   }
 
@@ -1163,15 +1160,15 @@ export class Notebook extends StaticNotebook {
   getContiguousSelection():
     | { head: number; anchor: number }
     | { head: null; anchor: null } {
-    const cells = this.widgets;
-    const first = ArrayExt.findFirstIndex(cells, c => this.isSelected(c));
+    let cells = this.widgets;
+    let first = ArrayExt.findFirstIndex(cells, c => this.isSelected(c));
 
     // Return early if no cells are selected.
     if (first === -1) {
       return { head: null, anchor: null };
     }
 
-    const last = ArrayExt.findLastIndex(
+    let last = ArrayExt.findLastIndex(
       cells,
       c => this.isSelected(c),
       -1,
@@ -1186,7 +1183,7 @@ export class Notebook extends StaticNotebook {
     }
 
     // Check that the active cell is one of the endpoints of the selection.
-    const activeIndex = this.activeCellIndex;
+    let activeIndex = this.activeCellIndex;
     if (first !== activeIndex && last !== activeIndex) {
       throw new Error('Active cell not at endpoint of selection');
     }
@@ -1215,27 +1212,12 @@ export class Notebook extends StaticNotebook {
    * outside the current window.
    */
   scrollToPosition(position: number, threshold = 25): void {
-    const node = this.node;
-    const ar = node.getBoundingClientRect();
-    const delta = position - ar.top - ar.height / 2;
+    let node = this.node;
+    let ar = node.getBoundingClientRect();
+    let delta = position - ar.top - ar.height / 2;
     if (Math.abs(delta) > (ar.height * threshold) / 100) {
       node.scrollTop += delta;
     }
-  }
-
-  /**
-   * Scroll so that the given cell is in view. Selects and activates cell.
-   *
-   * @param cell - A cell in the notebook widget.
-   *
-   */
-  scrollToCell(cell: Cell): void {
-    // use Phosphor to scroll
-    ElementExt.scrollIntoViewIfNeeded(this.node, cell.node);
-    // change selection and active cell:
-    this.deselectAll();
-    this.select(cell);
-    cell.activate();
   }
 
   /**
@@ -1321,7 +1303,7 @@ export class Notebook extends StaticNotebook {
    */
   protected onAfterAttach(msg: Message): void {
     super.onAfterAttach(msg);
-    const node = this.node;
+    let node = this.node;
     node.addEventListener('contextmenu', this, true);
     node.addEventListener('mousedown', this, true);
     node.addEventListener('mousedown', this);
@@ -1343,7 +1325,7 @@ export class Notebook extends StaticNotebook {
    * Handle `before-detach` messages for the widget.
    */
   protected onBeforeDetach(msg: Message): void {
-    const node = this.node;
+    let node = this.node;
     node.removeEventListener('contextmenu', this, true);
     node.removeEventListener('mousedown', this, true);
     node.removeEventListener('mousedown', this);
@@ -1386,7 +1368,7 @@ export class Notebook extends StaticNotebook {
     this._cellLayoutStateCache = { width };
 
     // Fallback:
-    for (const w of this.widgets) {
+    for (let w of this.widgets) {
       if (w instanceof Cell) {
         w.editorWidget.update();
       }
@@ -1413,7 +1395,7 @@ export class Notebook extends StaticNotebook {
    * Handle `update-request` messages sent to the widget.
    */
   protected onUpdateRequest(msg: Message): void {
-    const activeCell = this.activeCell;
+    let activeCell = this.activeCell;
 
     // Set the appropriate classes on the cells.
     if (this.mode === 'edit') {
@@ -1462,11 +1444,11 @@ export class Notebook extends StaticNotebook {
    */
   protected onCellInserted(index: number, cell: Cell): void {
     if (this.model && this.model.modelDB.isCollaborative) {
-      const modelDB = this.model.modelDB;
+      let modelDB = this.model.modelDB;
       void modelDB.connected.then(() => {
         if (!cell.isDisposed) {
           // Setup the selection style for collaborators.
-          const localCollaborator = modelDB.collaborators!.localCollaborator;
+          let localCollaborator = modelDB.collaborators!.localCollaborator;
           cell.editor.uuid = localCollaborator.sessionId;
           cell.editor.selectionStyle = {
             ...CodeEditor.defaultSelectionStyle,
@@ -1488,7 +1470,7 @@ export class Notebook extends StaticNotebook {
    * Handle a cell being moved.
    */
   protected onCellMoved(fromIndex: number, toIndex: number): void {
-    const i = this.activeCellIndex;
+    let i = this.activeCellIndex;
     if (fromIndex === i) {
       this.activeCellIndex = toIndex;
     } else if (fromIndex < i && i <= toIndex) {
@@ -1534,20 +1516,20 @@ export class Notebook extends StaticNotebook {
     editor: CodeEditor.IEditor,
     location: CodeEditor.EdgeLocation
   ): void {
-    const prev = this.activeCellIndex;
+    let prev = this.activeCellIndex;
     if (location === 'top') {
       this.activeCellIndex--;
       // Move the cursor to the first position on the last line.
       if (this.activeCellIndex < prev) {
-        const editor = this.activeCell!.editor;
-        const lastLine = editor.lineCount - 1;
+        let editor = this.activeCell!.editor;
+        let lastLine = editor.lineCount - 1;
         editor.setCursorPosition({ line: lastLine, column: 0 });
       }
     } else if (location === 'bottom') {
       this.activeCellIndex++;
       // Move the cursor to the first character.
       if (this.activeCellIndex > prev) {
-        const editor = this.activeCell!.editor;
+        let editor = this.activeCell!.editor;
         editor.setCursorPosition({ line: 0, column: 0 });
       }
     }
@@ -1558,7 +1540,7 @@ export class Notebook extends StaticNotebook {
    * Ensure that the notebook has proper focus.
    */
   private _ensureFocus(force = false): void {
-    const activeCell = this.activeCell;
+    let activeCell = this.activeCell;
     if (this.mode === 'edit' && activeCell) {
       if (!activeCell.editor.hasFocus()) {
         activeCell.editor.focus();
@@ -1581,7 +1563,7 @@ export class Notebook extends StaticNotebook {
     let n: HTMLElement | null = node;
     while (n && n !== this.node) {
       if (n.classList.contains(NB_CELL_CLASS)) {
-        const i = ArrayExt.findFirstIndex(
+        let i = ArrayExt.findFirstIndex(
           this.widgets,
           widget => widget.node === n
         );
@@ -1596,29 +1578,6 @@ export class Notebook extends StaticNotebook {
   }
 
   /**
-   * Find the target of html mouse event and cell index containing this target.
-   *
-   * #### Notes
-   * Returned index is -1 if the cell is not found.
-   */
-  private _findEventTargetAndCell(event: MouseEvent): [HTMLElement, number] {
-    let target = event.target as HTMLElement;
-    let index = this._findCell(target);
-    if (index === -1) {
-      // `event.target` sometimes gives an orphaned node in Firefox 57, which
-      // can have `null` anywhere in its parent line. If we fail to find a cell
-      // using `event.target`, try again using a target reconstructed from the
-      // position of the click event.
-      target = document.elementFromPoint(
-        event.clientX,
-        event.clientY
-      ) as HTMLElement;
-      index = this._findCell(target);
-    }
-    return [target, index];
-  }
-
-  /**
    * Handle `contextmenu` event.
    */
   private _evtContextMenuCapture(event: PointerEvent): void {
@@ -1628,9 +1587,20 @@ export class Notebook extends StaticNotebook {
     if (event.shiftKey) {
       return;
     }
-
-    const [target, index] = this._findEventTargetAndCell(event);
-    const widget = this.widgets[index];
+    // `event.target` sometimes gives an orphaned node in Firefox 57, which
+    // can have `null` anywhere in its parent tree. If we fail to find a
+    // cell using `event.target`, try again using a target reconstructed from
+    // the position of the click event.
+    let target = event.target as HTMLElement;
+    let index = this._findCell(target);
+    if (index === -1) {
+      target = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+      ) as HTMLElement;
+      index = this._findCell(target);
+    }
+    let widget = this.widgets[index];
 
     if (widget && widget.editorWidget.node.contains(target)) {
       // Prevent CodeMirror from focusing the editor.
@@ -1645,8 +1615,20 @@ export class Notebook extends StaticNotebook {
   private _evtMouseDownCapture(event: MouseEvent): void {
     const { button, shiftKey } = event;
 
-    const [target, index] = this._findEventTargetAndCell(event);
-    const widget = this.widgets[index];
+    // `event.target` sometimes gives an orphaned node in Firefox 57, which
+    // can have `null` anywhere in its parent tree. If we fail to find a
+    // cell using `event.target`, try again using a target reconstructed from
+    // the position of the click event.
+    let target = event.target as HTMLElement;
+    let index = this._findCell(target);
+    if (index === -1) {
+      target = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+      ) as HTMLElement;
+      index = this._findCell(target);
+    }
+    let widget = this.widgets[index];
 
     // On OS X, the context menu may be triggered with ctrl-left-click. In
     // Firefox, ctrl-left-click gives an event with button 2, but in Chrome,
@@ -1681,8 +1663,21 @@ export class Notebook extends StaticNotebook {
       return;
     }
 
-    const [target, index] = this._findEventTargetAndCell(event);
-    const widget = this.widgets[index];
+    // Find the target cell.
+    let target = event.target as HTMLElement;
+    let index = this._findCell(target);
+    if (index === -1) {
+      // `event.target` sometimes gives an orphaned node in
+      // Firefox 57, which can have `null` anywhere in its parent line. If we fail
+      // to find a cell using `event.target`, try again using a target
+      // reconstructed from the position of the click event.
+      target = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+      ) as HTMLElement;
+      index = this._findCell(target);
+    }
+    let widget = this.widgets[index];
 
     let targetArea: 'input' | 'prompt' | 'cell' | 'notebook';
     if (widget) {
@@ -1727,8 +1722,8 @@ export class Notebook extends StaticNotebook {
         document.addEventListener('mouseup', this, true);
         document.addEventListener('mousemove', this, true);
       } else if (button === 0 && !shiftKey) {
-        // Prepare to start a drag if we are on the drag region.
-        if (targetArea === 'prompt') {
+        // Prepare to start a drag if we are on the drag region. TODO: If there is no drag, we'll deselect on mouseup.
+        if (targetArea === 'prompt' && this.isSelectedOrActive(widget)) {
           // Prepare for a drag start
           this._dragData = {
             pressX: event.clientX,
@@ -1741,9 +1736,7 @@ export class Notebook extends StaticNotebook {
           document.addEventListener('mouseup', this, true);
           document.addEventListener('mousemove', this, true);
           event.preventDefault();
-        }
-
-        if (!this.isSelectedOrActive(widget)) {
+        } else {
           this.deselectAll();
           this.activeCellIndex = index;
         }
@@ -1769,9 +1762,6 @@ export class Notebook extends StaticNotebook {
    * Handle the `'mouseup'` event on the document.
    */
   private _evtDocumentMouseup(event: MouseEvent): void {
-    event.preventDefault();
-    event.stopPropagation();
-
     // Remove the event listeners we put on the document
     document.removeEventListener('mousemove', this, true);
     document.removeEventListener('mouseup', this, true);
@@ -1779,13 +1769,28 @@ export class Notebook extends StaticNotebook {
     if (this._mouseMode === 'couldDrag') {
       // We didn't end up dragging if we are here, so treat it as a click event.
 
-      const [, index] = this._findEventTargetAndCell(event);
+      // Find the target cell.
+      let target = event.target as HTMLElement;
+      let index = this._findCell(target);
+      if (index === -1) {
+        // `event.target` sometimes gives an orphaned node in
+        // Firefox 57, which can have `null` anywhere in its parent line. If we fail
+        // to find a cell using `event.target`, try again using a target
+        // reconstructed from the position of the click event.
+        target = document.elementFromPoint(
+          event.clientX,
+          event.clientY
+        ) as HTMLElement;
+        index = this._findCell(target);
+      }
 
       this.deselectAll();
       this.activeCellIndex = index;
     }
 
     this._mouseMode = null;
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   /**
@@ -1797,25 +1802,23 @@ export class Notebook extends StaticNotebook {
 
     // If in select mode, update the selection
     switch (this._mouseMode) {
-      case 'select': {
-        const target = event.target as HTMLElement;
-        const index = this._findCell(target);
+      case 'select':
+        let target = event.target as HTMLElement;
+        let index = this._findCell(target);
         if (index !== -1) {
           this.extendContiguousSelectionTo(index);
         }
         break;
-      }
-      case 'couldDrag': {
+      case 'couldDrag':
         // Check for a drag initialization.
-        const data = this._dragData!;
-        const dx = Math.abs(event.clientX - data.pressX);
-        const dy = Math.abs(event.clientY - data.pressY);
+        let data = this._dragData!;
+        let dx = Math.abs(event.clientX - data.pressX);
+        let dy = Math.abs(event.clientY - data.pressY);
         if (dx >= DRAG_THRESHOLD || dy >= DRAG_THRESHOLD) {
           this._mouseMode = null;
           this._startDrag(data.index, event.clientX, event.clientY);
         }
         break;
-      }
       default:
         break;
     }
@@ -1830,13 +1833,13 @@ export class Notebook extends StaticNotebook {
     }
     event.preventDefault();
     event.stopPropagation();
-    const target = event.target as HTMLElement;
-    const index = this._findCell(target);
+    let target = event.target as HTMLElement;
+    let index = this._findCell(target);
     if (index === -1) {
       return;
     }
 
-    const widget = (this.layout as PanelLayout).widgets[index];
+    let widget = (this.layout as PanelLayout).widgets[index];
     widget.node.classList.add(DROP_TARGET_CLASS);
   }
 
@@ -1849,7 +1852,7 @@ export class Notebook extends StaticNotebook {
     }
     event.preventDefault();
     event.stopPropagation();
-    const elements = this.node.getElementsByClassName(DROP_TARGET_CLASS);
+    let elements = this.node.getElementsByClassName(DROP_TARGET_CLASS);
     if (elements.length) {
       (elements[0] as HTMLElement).classList.remove(DROP_TARGET_CLASS);
     }
@@ -1865,16 +1868,16 @@ export class Notebook extends StaticNotebook {
     event.preventDefault();
     event.stopPropagation();
     event.dropAction = event.proposedAction;
-    const elements = this.node.getElementsByClassName(DROP_TARGET_CLASS);
+    let elements = this.node.getElementsByClassName(DROP_TARGET_CLASS);
     if (elements.length) {
       (elements[0] as HTMLElement).classList.remove(DROP_TARGET_CLASS);
     }
-    const target = event.target as HTMLElement;
-    const index = this._findCell(target);
+    let target = event.target as HTMLElement;
+    let index = this._findCell(target);
     if (index === -1) {
       return;
     }
-    const widget = (this.layout as PanelLayout).widgets[index];
+    let widget = (this.layout as PanelLayout).widgets[index];
     widget.node.classList.add(DROP_TARGET_CLASS);
   }
 
@@ -1902,14 +1905,14 @@ export class Notebook extends StaticNotebook {
     }
 
     // Model presence should be checked before calling event handlers
-    const model = this.model!;
+    let model = this.model!;
 
-    const source: Notebook = event.source;
+    let source: Notebook = event.source;
     if (source === this) {
       // Handle the case where we are moving cells within
       // the same notebook.
       event.dropAction = 'move';
-      const toMove: Cell[] = event.mimeData.getData('internal:cells');
+      let toMove: Cell[] = event.mimeData.getData('internal:cells');
 
       // Compute the to/from indices for the move.
       let fromIndex = ArrayExt.firstIndexOf(this.widgets, toMove[0]);
@@ -1949,9 +1952,9 @@ export class Notebook extends StaticNotebook {
       if (index === -1) {
         index = this.widgets.length;
       }
-      const start = index;
-      const values = event.mimeData.getData(JUPYTER_CELL_MIME);
-      const factory = model.contentFactory;
+      let start = index;
+      let values = event.mimeData.getData(JUPYTER_CELL_MIME);
+      let factory = model.contentFactory;
 
       // Insert the copies of the original cells.
       model.cells.beginCompoundOperation();
@@ -1982,24 +1985,23 @@ export class Notebook extends StaticNotebook {
    * Start a drag event.
    */
   private _startDrag(index: number, clientX: number, clientY: number): void {
-    const cells = this.model!.cells;
-    const selected: nbformat.ICell[] = [];
-    const toMove: Cell[] = [];
+    let cells = this.model!.cells;
+    let selected: nbformat.ICell[] = [];
+    let toMove: Cell[] = [];
 
     each(this.widgets, (widget, i) => {
-      const cell = cells.get(i);
+      let cell = cells.get(i);
       if (this.isSelectedOrActive(widget)) {
         widget.addClass(DROP_SOURCE_CLASS);
         selected.push(cell.toJSON());
         toMove.push(widget);
       }
     });
-    const activeCell = this.activeCell;
+    let activeCell = this.activeCell;
     let dragImage: HTMLElement | null = null;
     let countString: string;
     if (activeCell?.model.type === 'code') {
-      const executionCount = (activeCell.model as ICodeCellModel)
-        .executionCount;
+      let executionCount = (activeCell.model as ICodeCellModel).executionCount;
       countString = ' ';
       if (executionCount) {
         countString = executionCount.toString();
@@ -2052,17 +2054,18 @@ export class Notebook extends StaticNotebook {
    * Handle `focus` events for the widget.
    */
   private _evtFocusIn(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
-    const index = this._findCell(target);
-    if (index !== -1) {
-      const widget = this.widgets[index];
+    let target = event.target as HTMLElement;
+
+    let i = this._findCell(target);
+    if (i !== -1) {
+      let widget = this.widgets[i];
       // If the editor itself does not have focus, ensure command mode.
       if (!widget.editorWidget.node.contains(target)) {
         this.mode = 'command';
       }
-      this.activeCellIndex = index;
+      this.activeCellIndex = i;
       // If the editor has focus, ensure edit mode.
-      const node = widget.editorWidget.node;
+      let node = widget.editorWidget.node;
       if (node.contains(target)) {
         this.mode = 'edit';
       }
@@ -2081,7 +2084,7 @@ export class Notebook extends StaticNotebook {
    * Handle `focusout` events for the notebook.
    */
   private _evtFocusOut(event: MouseEvent): void {
-    const relatedTarget = event.relatedTarget as HTMLElement;
+    let relatedTarget = event.relatedTarget as HTMLElement;
 
     // Bail if the window is losing focus, to preserve edit mode. This test
     // assumes that we explicitly focus things rather than calling blur()
@@ -2091,9 +2094,9 @@ export class Notebook extends StaticNotebook {
 
     // Bail if the item gaining focus is another cell,
     // and we should not be entering command mode.
-    const index = this._findCell(relatedTarget);
-    if (index !== -1) {
-      const widget = this.widgets[index];
+    const i = this._findCell(relatedTarget);
+    if (i !== -1) {
+      const widget = this.widgets[i];
       if (widget.editorWidget.node.contains(relatedTarget)) {
         return;
       }
@@ -2115,20 +2118,32 @@ export class Notebook extends StaticNotebook {
    * Handle `dblclick` events for the widget.
    */
   private _evtDblClick(event: MouseEvent): void {
-    const model = this.model;
+    let model = this.model;
     if (!model) {
       return;
     }
     this.deselectAll();
 
-    const [target, index] = this._findEventTargetAndCell(event);
+    // `event.target` sometimes gives an orphaned node in Firefox 57, which
+    // can have `null` anywhere in its parent tree. If we fail to find a
+    // cell using `event.target`, try again using a target reconstructed from
+    // the position of the click event.
+    let target = event.target as HTMLElement;
+    let i = this._findCell(target);
+    if (i === -1) {
+      target = document.elementFromPoint(
+        event.clientX,
+        event.clientY
+      ) as HTMLElement;
+      i = this._findCell(target);
+    }
 
-    if (index === -1) {
+    if (i === -1) {
       return;
     }
-    this.activeCellIndex = index;
-    if (model.cells.get(index).type === 'markdown') {
-      const widget = this.widgets[index] as MarkdownCell;
+    this.activeCellIndex = i;
+    if (model.cells.get(i).type === 'markdown') {
+      let widget = this.widgets[i] as MarkdownCell;
       widget.rendered = false;
     } else if (target.localName === 'img') {
       target.classList.toggle(UNCONFINED_CLASS);
@@ -2142,7 +2157,7 @@ export class Notebook extends StaticNotebook {
   private _trimSelections(): void {
     for (let i = 0; i < this.widgets.length; i++) {
       if (i !== this._activeCellIndex) {
-        const cell = this.widgets[i];
+        let cell = this.widgets[i];
         cell.model.selections.delete(cell.editor.uuid);
       }
     }

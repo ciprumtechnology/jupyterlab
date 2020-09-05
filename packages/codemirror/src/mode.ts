@@ -27,7 +27,7 @@ import 'codemirror/mode/sql/sql';
 import { PathExt } from '@jupyterlab/coreutils';
 
 // Stub for the require function.
-declare let require: any;
+declare var require: any;
 
 /**
  * The namespace for CodeMirror Mode functionality.
@@ -61,7 +61,7 @@ export namespace Mode {
     (spec: ISpec): Promise<boolean>;
   }
 
-  const specLoaders: Private.IRankItem[] = [
+  let specLoaders: Private.IRankItem[] = [
     {
       // Simplest, cheapest check by mode name.
       loader: async spec => CodeMirror.modes.hasOwnProperty(spec.mode),
@@ -69,13 +69,11 @@ export namespace Mode {
     },
     {
       // Fetch the mode asynchronously.
-      loader: function (spec) {
+      loader: function(spec) {
         return new Promise<boolean>((resolve, reject) => {
           // An arrow function below seems to miscompile in our current webpack to
           // invalid js.
-          require([
-            `codemirror/mode/${spec.mode}/${spec.mode}.js`
-          ], function () {
+          require([`codemirror/mode/${spec.mode}/${spec.mode}.js`], function() {
             resolve(true);
           });
         });
@@ -88,7 +86,7 @@ export namespace Mode {
    * Get the raw list of available modes specs.
    */
   export function getModeInfo(): ISpec[] {
-    return CodeMirror.modeInfo as ISpec[];
+    return CodeMirror.modeInfo;
   }
 
   /**
@@ -111,9 +109,9 @@ export namespace Mode {
    * @returns A promise that resolves when the mode is available.
    */
   export async function ensure(mode: string | ISpec): Promise<ISpec | null> {
-    const spec = findBest(mode);
+    let spec = findBest(mode);
 
-    for (const specLoader of specLoaders) {
+    for (let specLoader of specLoaders) {
       if (await specLoader.loader(spec)) {
         return spec;
       }
@@ -123,8 +121,8 @@ export namespace Mode {
   }
 
   export function addSpecLoader(loader: ISpecLoader, rank: number) {
-    const item = { loader, rank };
-    const index = ArrayExt.upperBound(specLoaders, item, Private.itemCmp);
+    let item = { loader, rank };
+    let index = ArrayExt.upperBound(specLoaders, item, Private.itemCmp);
     ArrayExt.insert(specLoaders, index, item);
   }
 
@@ -132,9 +130,9 @@ export namespace Mode {
    * Find a codemirror mode by name or CodeMirror spec.
    */
   export function findBest(mode: string | ISpec): ISpec {
-    const modename = typeof mode === 'string' ? mode : mode.mode || mode.name;
-    const mimetype = typeof mode !== 'string' ? mode.mime : modename;
-    const ext = typeof mode !== 'string' ? mode.ext ?? [] : [];
+    let modename = typeof mode === 'string' ? mode : mode.mode || mode.name;
+    let mimetype = typeof mode !== 'string' ? mode.mime : modename;
+    let ext = typeof mode !== 'string' ? mode.ext ?? [] : [];
 
     return (
       CodeMirror.findModeByName(modename || '') ||
@@ -163,7 +161,7 @@ export namespace Mode {
    * Find a codemirror mode by filename.
    */
   export function findByFileName(name: string): ISpec {
-    const basename = PathExt.basename(name);
+    let basename = PathExt.basename(name);
     return CodeMirror.findModeByFileName(basename);
   }
 
@@ -175,7 +173,7 @@ export namespace Mode {
       return CodeMirror.findModeByExtension(name);
     }
     for (let i = 0; i < ext.length; i++) {
-      const mode = CodeMirror.findModeByExtension(ext[i]);
+      let mode = CodeMirror.findModeByExtension(ext[i]);
       if (mode) {
         return mode;
       }

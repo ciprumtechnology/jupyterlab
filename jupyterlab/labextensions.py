@@ -3,20 +3,15 @@
 
 # Copyright (c) Jupyter Development Team.
 # Distributed under the terms of the Modified BSD License.
-from glob import glob
-import json
 import os
-import shutil
 import sys
 import traceback
 
 from copy import copy
 
 from jupyter_core.application import JupyterApp, base_flags, base_aliases
-from jupyter_core.paths import jupyter_path
-from jupyterlab.coreconfig import CoreConfig
-from jupyterlab.debuglog import DebugLogFileMixin
-from traitlets import Bool, Instance, List, Unicode, default
+
+from traitlets import Bool, Instance, Unicode
 
 from .commands import (
     install_extension, uninstall_extension, list_extensions,
@@ -24,8 +19,8 @@ from .commands import (
     link_package, unlink_package, build, get_app_version, HERE,
     update_extension, AppOptions,
 )
-from .dynamic_labextensions import develop_labextension_py, build_labextension, watch_labextension
-from .labapp import LabApp
+from .coreconfig import CoreConfig
+from .debuglog import DebugLogFileMixin
 
 
 flags = dict(base_flags)
@@ -42,12 +37,6 @@ check_flags = copy(flags)
 check_flags['installed'] = (
     {'CheckLabExtensionsApp': {'should_check_installed_only': True}},
     "Check only if the extension is installed."
-)
-
-develop_flags = copy(flags)
-develop_flags['overwrite'] = (
-    {'DevelopLabExtensionApp': {'overwrite': True}},
-    "Overwrite files"
 )
 
 update_flags = copy(flags)
@@ -78,7 +67,6 @@ class BaseExtensionApp(JupyterApp, DebugLogFileMixin):
     version = VERSION
     flags = flags
     aliases = aliases
-    name = "lab"
 
     # Not configurable!
     core_config = Instance(CoreConfig, allow_none=True)
@@ -90,21 +78,13 @@ class BaseExtensionApp(JupyterApp, DebugLogFileMixin):
         help="Whether to build the app after the action")
 
     dev_build = Bool(None, allow_none=True, config=True,
-        help="Whether to build in dev mode. Defaults to True (dev mode) if there are any locally linked extensions, else defaults to False (production mode).")
+        help="Whether to build in dev mode. Defaults to True (dev mode) if there are any locally linked extensions, else defaults to False (prod mode).")
 
     minimize = Bool(True, config=True,
         help="Whether to use a minifier during the Webpack build (defaults to True). Only affects production builds.")
 
     should_clean = Bool(False, config=True,
         help="Whether temporary files should be cleaned up after building jupyterlab")
-
-    labextensions_path = List(Unicode(), help='The standard paths to look in for dynamic JupyterLab extensions')
-
-    @default('labextensions_path')
-    def _default_labextensions_path(self):
-        lab = LabApp()
-        lab.load_config_file()
-        return lab.extra_labextensions_path + lab.labextensions_path
 
     def start(self):
         if self.app_dir and self.app_dir.startswith(HERE):
@@ -164,61 +144,10 @@ class InstallLabExtensionApp(BaseExtensionApp):
                     app_dir=self.app_dir,
                     logger=self.log,
                     core_config=self.core_config,
-                    labextensions_path=self.labextensions_path
                 )
             )
             for i, arg in enumerate(self.extra_args)
         ])
-
-
-class DevelopLabExtensionApp(BaseExtensionApp):
-    desciption = "Develop labextension"
-    flags = develop_flags
-    
-    user = Bool(False, config=True, help="Whether to do a user install")
-    sys_prefix = Bool(True, config=True, help="Use the sys.prefix as the prefix")
-    overwrite = Bool(False, config=True, help="Whether to overwrite files")
-    symlink = Bool(True, config=False, help="Whether to use a symlink")
-
-    labextensions_dir = Unicode('', config=True,
-           help="Full path to labextensions dir (probably use prefix or user)")
-
-    def run_task(self):
-        "Add config for this labextension"
-        self.extra_args = self.extra_args or [os.getcwd()]
-        for arg in self.extra_args:
-            develop_labextension_py(arg, user=self.user, sys_prefix=self.sys_prefix, labextensions_dir=self.labextensions_dir, logger=self.log, overwrite=self.overwrite,
-            symlink=self.symlink)
-
-
-class BuildLabExtensionApp(BaseExtensionApp):
-    description = "Build labextension"
-
-    static_url = Unicode('', config=True,
-        help="Sets the url for static assets when building")
-
-    development = Bool(False, config=True,
-        help="Build in development mode")
-
-    aliases = {
-        'static-url': 'BuildLabExtensionApp.static_url'
-    }
-
-    def run_task(self):
-        self.extra_args = self.extra_args or [os.getcwd()]
-        build_labextension(self.extra_args[0], logger=self.log, development=self.development, static_url=self.static_url or None)
-
-
-class WatchLabExtensionApp(BaseExtensionApp):
-    description = "Watch labextension"
-
-    development = Bool(True, config=True,
-        help="Build in development mode")
-
-    def run_task(self):
-        self.extra_args = self.extra_args or [os.getcwd()]
-        labextensions_path = self.labextensions_path
-        watch_labextension(self.extra_args[0], labextensions_path, logger=self.log, development=self.development)
 
 
 class UpdateLabExtensionApp(BaseExtensionApp):
@@ -233,7 +162,7 @@ class UpdateLabExtensionApp(BaseExtensionApp):
             self.log.warn('Specify an extension to update, or use --all to update all extensions')
             return False
         app_options = AppOptions(app_dir=self.app_dir, logger=self.log,
-            core_config=self.core_config, labextensions_path=self.labextensions_path)
+            core_config=self.core_config)
         if self.all:
             return update_extension(all_=True, app_options=app_options)
         return any([
@@ -257,7 +186,6 @@ class LinkLabExtensionApp(BaseExtensionApp):
         self.extra_args = self.extra_args or [os.getcwd()]
         options = AppOptions(
             app_dir=self.app_dir, logger=self.log,
-            labextensions_path=self.labextensions_path,
             core_config=self.core_config)
         return any([
             link_package(
@@ -274,7 +202,6 @@ class UnlinkLabExtensionApp(BaseExtensionApp):
         self.extra_args = self.extra_args or [os.getcwd()]
         options = AppOptions(
             app_dir=self.app_dir, logger=self.log,
-            labextensions_path=self.labextensions_path,
             core_config=self.core_config)
         return any([
             unlink_package(
@@ -293,10 +220,8 @@ class UninstallLabExtensionApp(BaseExtensionApp):
 
     def run_task(self):
         self.extra_args = self.extra_args or [os.getcwd()]
-
         options = AppOptions(
             app_dir=self.app_dir, logger=self.log,
-            labextensions_path=self.labextensions_path,
             core_config=self.core_config)
         return any([
             uninstall_extension(
@@ -311,8 +236,7 @@ class ListLabExtensionsApp(BaseExtensionApp):
 
     def run_task(self):
         list_extensions(app_options=AppOptions(
-            app_dir=self.app_dir, logger=self.log, core_config=self.core_config, 
-            labextensions_path=self.labextensions_path))
+            app_dir=self.app_dir, logger=self.log, core_config=self.core_config))
 
 
 class EnableLabExtensionsApp(BaseExtensionApp):
@@ -320,8 +244,7 @@ class EnableLabExtensionsApp(BaseExtensionApp):
 
     def run_task(self):
         app_options = AppOptions(
-            app_dir=self.app_dir, logger=self.log, core_config=self.core_config, 
-            labextensions_path=self.labextensions_path)
+            app_dir=self.app_dir, logger=self.log, core_config=self.core_config)
         [enable_extension(arg, app_options=app_options) for arg in self.extra_args]
 
 
@@ -330,8 +253,7 @@ class DisableLabExtensionsApp(BaseExtensionApp):
 
     def run_task(self):
         app_options = AppOptions(
-            app_dir=self.app_dir, logger=self.log, core_config=self.core_config, 
-            labextensions_path=self.labextensions_path)
+            app_dir=self.app_dir, logger=self.log, core_config=self.core_config)
         [disable_extension(arg, app_options=app_options) for arg in self.extra_args]
 
 
@@ -344,8 +266,7 @@ class CheckLabExtensionsApp(BaseExtensionApp):
 
     def run_task(self):
         app_options = AppOptions(
-            app_dir=self.app_dir, logger=self.log, core_config=self.core_config, 
-            labextensions_path=self.labextensions_path)
+            app_dir=self.app_dir, logger=self.log, core_config=self.core_config)
         all_enabled = all(
             check_extension(
                 arg,
@@ -358,9 +279,6 @@ class CheckLabExtensionsApp(BaseExtensionApp):
 
 _examples = """
 jupyter labextension list                        # list all configured labextensions
-jupyter labextension develop                     # develop a dynamic labextension
-jupyter labextension build                       # build a dynamic labextension
-jupyter labextension watch                       # watch a dynamic labextension
 jupyter labextension install <extension name>    # install a labextension
 jupyter labextension uninstall <extension name>  # uninstall a labextension
 """
@@ -375,9 +293,6 @@ class LabExtensionApp(JupyterApp):
 
     subcommands = dict(
         install=(InstallLabExtensionApp, "Install labextension(s)"),
-        develop=(DevelopLabExtensionApp, "Develop labextension(s)"),
-        build=(BuildLabExtensionApp, "Build labextension"),
-        watch=(WatchLabExtensionApp, "Watch labextension"),
         update=(UpdateLabExtensionApp, "Update labextension(s)"),
         uninstall=(UninstallLabExtensionApp, "Uninstall labextension(s)"),
         list=(ListLabExtensionsApp, "List labextensions"),

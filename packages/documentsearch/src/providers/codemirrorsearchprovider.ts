@@ -348,7 +348,7 @@ export class CodeMirrorSearchProvider
     const end = CodeMirror.Pos(this._cm.doc.lastLine());
     const content = this._cm.doc.getRange(start, end);
     const lines = content.split('\n');
-    const totalMatchIndex = 0;
+    let totalMatchIndex = 0;
     lines.forEach((line, lineNumber) => {
       query.lastIndex = 0;
       let match = query.exec(line);

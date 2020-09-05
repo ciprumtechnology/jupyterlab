@@ -1,4 +1,4 @@
-const version = require('./package.json').version;
+var version = require('./package.json').version;
 
 module.exports = {
   entry: './lib',

@@ -113,14 +113,14 @@ export class KernelManager extends BaseManager implements Kernel.IManager {
     let handleComms = options.handleComms ?? true;
     // By default, handle comms only if no other kernel connection is.
     if (options.handleComms === undefined) {
-      for (const kc of this._kernelConnections) {
+      for (let kc of this._kernelConnections) {
         if (kc.id === id && kc.handleComms) {
           handleComms = false;
           break;
         }
       }
     }
-    const kernelConnection = new KernelConnection({
+    let kernelConnection = new KernelConnection({
       handleComms,
       ...options,
       serverSettings: this.serverSettings

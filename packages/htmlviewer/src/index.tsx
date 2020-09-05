@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -20,8 +20,6 @@ import {
   DocumentWidget,
   IDocumentWidget
 } from '@jupyterlab/docregistry';
-
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 
 import { refreshIcon } from '@jupyterlab/ui-components';
 
@@ -65,8 +63,7 @@ const CSS_CLASS = 'jp-HTMLViewer';
  * requests, so that local HTML documents can access CSS, images,
  * etc from the files system.
  */
-export class HTMLViewer
-  extends DocumentWidget<IFrame>
+export class HTMLViewer extends DocumentWidget<IFrame>
   implements IDocumentWidget<IFrame> {
   /**
    * Create a new widget for rendering HTML.
@@ -76,8 +73,6 @@ export class HTMLViewer
       ...options,
       content: new IFrame({ sandbox: ['allow-same-origin'] })
     });
-    this.translator = options.translator || nullTranslator;
-    const trans = this.translator.load('jupyterlab');
     this.content.addClass(CSS_CLASS);
 
     void this.context.ready.then(() => {
@@ -101,18 +96,13 @@ export class HTMLViewer
             this.update();
           }
         },
-        tooltip: trans.__('Rerender HTML Document')
+        tooltip: 'Rerender HTML Document'
       })
     );
     // Make a trust button for the toolbar.
     this.toolbar.addItem(
       'trust',
-      ReactWidget.create(
-        <Private.TrustButtonComponent
-          htmlDocument={this}
-          translator={this.translator}
-        />
-      )
+      ReactWidget.create(<Private.TrustButtonComponent htmlDocument={this} />)
     );
   }
 
@@ -132,7 +122,6 @@ export class HTMLViewer
     } else {
       this.content.sandbox = Private.untrusted;
     }
-    // eslint-disable-next-line
     this.content.url = this.content.url; // Force a refresh.
     this._trustedChanged.emit(value);
   }
@@ -216,7 +205,6 @@ export class HTMLViewer
     return doc.documentElement.innerHTML;
   }
 
-  protected translator: ITranslator;
   private _renderPending = false;
   private _parser = new DOMParser();
   private _monitor: ActivityMonitor<
@@ -262,11 +250,6 @@ namespace Private {
      */
     export interface IProps {
       htmlDocument: HTMLViewer;
-
-      /**
-       * Language translator.
-       */
-      translator?: ITranslator;
     }
   }
 
@@ -276,8 +259,6 @@ namespace Private {
    * This wraps the ToolbarButtonComponent and watches for trust chagnes.
    */
   export function TrustButtonComponent(props: TrustButtonComponent.IProps) {
-    const translator = props.translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
     return (
       <UseSignal
         signal={props.htmlDocument.trustedChanged}
@@ -289,15 +270,11 @@ namespace Private {
             onClick={() =>
               (props.htmlDocument.trusted = !props.htmlDocument.trusted)
             }
-            tooltip={trans.__(`Whether the HTML file is trusted.
+            tooltip={`Whether the HTML file is trusted.
 Trusting the file allows scripts to run in it,
 which may result in security risks.
-Only enable for files you trust.`)}
-            label={
-              props.htmlDocument.trusted
-                ? trans.__('Distrust HTML')
-                : trans.__('Trust HTML')
-            }
+Only enable for files you trust.`}
+            label={props.htmlDocument.trusted ? 'Distrust HTML' : 'Trust HTML'}
           />
         )}
       </UseSignal>

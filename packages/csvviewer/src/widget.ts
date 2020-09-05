@@ -30,7 +30,6 @@ import { PanelLayout, Widget } from '@lumino/widgets';
 import { CSVDelimiter } from './toolbar';
 
 import { DSVModel } from './model';
-import { ITranslator } from '@jupyterlab/translation';
 
 /**
  * The class name added to a CSV viewer.
@@ -243,8 +242,8 @@ export class CSVViewer extends Widget {
   constructor(options: CSVViewer.IOptions) {
     super();
 
-    const context = (this._context = options.context);
-    const layout = (this.layout = new PanelLayout());
+    let context = (this._context = options.context);
+    let layout = (this.layout = new PanelLayout());
 
     this.addClass(CSV_CLASS);
 
@@ -366,9 +365,9 @@ export class CSVViewer extends Widget {
    * Create the model for the grid.
    */
   private _updateGrid(): void {
-    const data: string = this._context.model.toString();
-    const delimiter = this._delimiter;
-    const oldModel = this._grid.dataModel as DSVModel;
+    let data: string = this._context.model.toString();
+    let delimiter = this._delimiter;
+    let oldModel = this._grid.dataModel as DSVModel;
     const dataModel = (this._grid.dataModel = new DSVModel({
       data,
       delimiter
@@ -455,7 +454,7 @@ export class CSVDocumentWidget extends DocumentWidget<CSVViewer> {
    * Set URI fragment identifier for rows
    */
   setFragment(fragment: string): void {
-    const parseFragments = fragment.split('=');
+    let parseFragments = fragment.split('=');
 
     // TODO: expand to allow columns and cells to be selected
     // reference: https://tools.ietf.org/html/rfc7111#section-3
@@ -485,11 +484,6 @@ export namespace CSVDocumentWidget {
   export interface IOptions
     extends DocumentWidget.IOptionsOptionalContent<CSVViewer> {
     delimiter?: string;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -513,8 +507,7 @@ export class CSVViewerFactory extends ABCWidgetFactory<
   protected createNewWidget(
     context: DocumentRegistry.Context
   ): IDocumentWidget<CSVViewer> {
-    const translator = this.translator;
-    return new CSVDocumentWidget({ context, translator });
+    return new CSVDocumentWidget({ context });
   }
 }
 
@@ -531,10 +524,6 @@ export class TSVViewerFactory extends ABCWidgetFactory<
     context: DocumentRegistry.Context
   ): IDocumentWidget<CSVViewer> {
     const delimiter = '\t';
-    return new CSVDocumentWidget({
-      context,
-      delimiter,
-      translator: this.translator
-    });
+    return new CSVDocumentWidget({ context, delimiter });
   }
 }

@@ -2,11 +2,6 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { ToolbarButton, showErrorMessage } from '@jupyterlab/apputils';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 import { fileUploadIcon } from '@jupyterlab/ui-components';
 
 import { FileBrowserModel } from './model';
@@ -24,11 +19,9 @@ export class Uploader extends ToolbarButton {
       onClick: () => {
         this._input.click();
       },
-      tooltip: Private.translateToolTip(options.translator)
+      tooltip: 'Upload Files'
     });
     this.fileBrowserModel = options.model;
-    this.translator = options.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this._input.onclick = this._onInputClicked;
     this._input.onchange = this._onInputChanged;
     this.addClass('jp-id-upload');
@@ -45,13 +38,10 @@ export class Uploader extends ToolbarButton {
    * The 'change' handler for the input field.
    */
   private _onInputChanged = () => {
-    const files = Array.prototype.slice.call(this._input.files) as File[];
-    const pending = files.map(file => this.fileBrowserModel.upload(file));
+    let files = Array.prototype.slice.call(this._input.files) as File[];
+    let pending = files.map(file => this.fileBrowserModel.upload(file));
     void Promise.all(pending).catch(error => {
-      void showErrorMessage(
-        this._trans._p('showErrorMessage', 'Upload Error'),
-        error
-      );
+      void showErrorMessage('Upload Error', error);
     });
   };
 
@@ -64,8 +54,6 @@ export class Uploader extends ToolbarButton {
     this._input.value = '';
   };
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _input = Private.createUploadInput();
 }
 
@@ -81,11 +69,6 @@ export namespace Uploader {
      * A file browser fileBrowserModel instance.
      */
     model: FileBrowserModel;
-
-    /**
-     * The language translator.
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -97,18 +80,9 @@ namespace Private {
    * Create the upload input node for a file buttons widget.
    */
   export function createUploadInput(): HTMLInputElement {
-    const input = document.createElement('input');
+    let input = document.createElement('input');
     input.type = 'file';
     input.multiple = true;
     return input;
-  }
-
-  /**
-   * Translate upload tooltip.
-   */
-  export function translateToolTip(translator?: ITranslator) {
-    translator = translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
-    return trans.__('Upload Files');
   }
 }

@@ -1,11 +1,8 @@
 import { Widget } from '@lumino/widgets';
+
 import { addIcon } from '@jupyterlab/ui-components';
+
 import { TagTool } from './tool';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 
 /**
  * A widget which hosts a cell tags area.
@@ -14,10 +11,8 @@ export class AddWidget extends Widget {
   /**
    * Construct a new tag widget.
    */
-  constructor(translator?: ITranslator) {
+  constructor() {
     super();
-    this.translator = translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this.addClass('tag');
     this.editing = false;
     this.buildTag();
@@ -27,16 +22,16 @@ export class AddWidget extends Widget {
    * Create input box with icon and attach to this.node.
    */
   buildTag() {
-    const text = this.input || document.createElement('input');
-    text.value = this._trans.__('Add Tag');
+    let text = document.createElement('input');
+    text.value = 'Add Tag';
     text.contentEditable = 'true';
     text.className = 'add-tag';
     text.style.width = '49px';
     this.input = text;
-    const tag = document.createElement('div');
+    let tag = document.createElement('div');
     tag.className = 'tag-holder';
     tag.appendChild(text);
-    const iconContainer = addIcon.element({
+    let iconContainer = addIcon.element({
       tag: 'span',
       elementPosition: 'center',
       height: '18px',
@@ -110,7 +105,7 @@ export class AddWidget extends Widget {
       this.input.focus();
     } else if (event.target !== this.input) {
       if (this.input.value !== '') {
-        const value = this.input.value;
+        let value = this.input.value;
         (this.parent as TagTool).addTag(value);
         this.input.blur();
         this._evtBlur();
@@ -134,7 +129,7 @@ export class AddWidget extends Widget {
    * @param event - The DOM event sent to the widget
    */
   private _evtKeyDown(event: KeyboardEvent) {
-    const tmp = document.createElement('span');
+    let tmp = document.createElement('span');
     tmp.className = 'add-tag';
     tmp.innerHTML = this.input.value;
     // set width to the pixel length of the text
@@ -143,7 +138,7 @@ export class AddWidget extends Widget {
     document.body.removeChild(tmp);
     // if they hit Enter, add the tag and reset state
     if (event.keyCode === 13) {
-      const value = this.input.value;
+      let value = this.input.value;
       (this.parent as TagTool).addTag(value);
       this.input.blur();
       this._evtBlur();
@@ -156,14 +151,12 @@ export class AddWidget extends Widget {
   private _evtBlur() {
     if (this.editing) {
       this.editing = false;
-      this.input.value = this._trans.__('Add Tag');
+      this.input.value = 'Add Tag';
       this.input.style.width = '49px';
     }
   }
 
-  public parent: TagTool | null = null;
+  public parent: TagTool;
   private editing: boolean;
-  private input: HTMLInputElement = document.createElement('input');
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
+  private input: HTMLInputElement;
 }

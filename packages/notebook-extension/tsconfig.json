@@ -31,9 +31,6 @@
       "path": "../launcher"
     },
     {
-      "path": "../logconsole"
-    },
-    {
       "path": "../mainmenu"
     },
     {
@@ -59,9 +56,6 @@
     },
     {
       "path": "../statusbar"
-    },
-    {
-      "path": "../translation"
     },
     {
       "path": "../ui-components"

@@ -37,9 +37,6 @@
       "path": "../settingregistry"
     },
     {
-      "path": "../translation"
-    },
-    {
       "path": "../ui-components"
     }
   ]

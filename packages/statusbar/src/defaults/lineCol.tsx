@@ -7,12 +7,6 @@ import { VDomRenderer, VDomModel, ReactWidget } from '@jupyterlab/apputils';
 
 import { CodeEditor } from '@jupyterlab/codeeditor';
 
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
-
 import { lineFormIcon } from '@jupyterlab/ui-components';
 
 import { classes } from 'typestyle/lib';
@@ -53,11 +47,6 @@ namespace LineFormComponent {
      * maximum line of the relevant editor).
      */
     maxLine: number;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**
@@ -88,8 +77,6 @@ class LineFormComponent extends React.Component<
    */
   constructor(props: LineFormComponent.IProps) {
     super(props);
-    this.translator = props.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this.state = {
       value: '',
       hasFocus: false
@@ -137,10 +124,7 @@ class LineFormComponent extends React.Component<
             </div>
           </div>
           <label className={lineFormCaption}>
-            {this._trans.__(
-              'Go to line number between 1 and %1',
-              this.props.maxLine
-            )}
+            Go to line number between 1 and {this.props.maxLine}
           </label>
         </form>
       </div>
@@ -187,8 +171,6 @@ class LineFormComponent extends React.Component<
     this.setState({ hasFocus: false });
   };
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _textInput: HTMLInputElement | null = null;
 }
 
@@ -211,11 +193,6 @@ namespace LineColComponent {
     column: number;
 
     /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
-
-    /**
      * A click handler for the LineColComponent, which
      * we use to launch the LineFormComponent.
      */
@@ -230,13 +207,11 @@ namespace LineColComponent {
 function LineColComponent(
   props: LineColComponent.IProps
 ): React.ReactElement<LineColComponent.IProps> {
-  const translator = props.translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
   return (
     <TextItem
       onClick={props.handleClick}
-      source={trans.__('Ln %1, Col %2', props.line, props.column)}
-      title={trans.__('Go to line number…')}
+      source={`Ln ${props.line}, Col ${props.column}`}
+      title="Go to line number…"
     />
   );
 }
@@ -248,10 +223,9 @@ export class LineCol extends VDomRenderer<LineCol.Model> {
   /**
    * Construct a new LineCol status item.
    */
-  constructor(translator?: ITranslator) {
+  constructor() {
     super(new LineCol.Model());
     this.addClass(interactiveItem);
-    this.translator = translator || nullTranslator;
   }
 
   /**
@@ -265,7 +239,6 @@ export class LineCol extends VDomRenderer<LineCol.Model> {
         <LineColComponent
           line={this.model.line}
           column={this.model.column}
-          translator={this.translator}
           handleClick={() => this._handleClick()}
         />
       );
@@ -284,7 +257,6 @@ export class LineCol extends VDomRenderer<LineCol.Model> {
         handleSubmit={val => this._handleSubmit(val)}
         currentLine={this.model!.line}
         maxLine={this.model!.editor!.lineCount}
-        translator={this.translator}
       />
     );
 
@@ -304,7 +276,6 @@ export class LineCol extends VDomRenderer<LineCol.Model> {
     this.model!.editor!.focus();
   }
 
-  protected translator: ITranslator;
   private _popup: Popup | null = null;
 }
 

@@ -1,8 +1,6 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
 
-import { JupyterFrontEnd } from '@jupyterlab/application';
-
 import { VDomModel } from '@jupyterlab/apputils';
 
 import {
@@ -29,8 +27,6 @@ import { reportInstallError } from './dialog';
 import { Searcher, ISearchResult, isJupyterOrg } from './npm';
 
 import { Lister, ListResult, IListEntry } from './listings';
-
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 
 /**
  * Information about an extension.
@@ -76,9 +72,9 @@ export interface IEntry {
    */
   installed_version: string;
 
-  blockedExtensionsEntry: IListEntry | undefined;
+  blacklistEntry: IListEntry | undefined;
 
-  allowedExtensionsEntry: IListEntry | undefined;
+  whitelistEntry: IListEntry | undefined;
 }
 
 /**
@@ -156,14 +152,10 @@ export type Action = 'install' | 'uninstall' | 'enable' | 'disable';
  */
 export class ListModel extends VDomModel {
   constructor(
-    app: JupyterFrontEnd,
     serviceManager: ServiceManager,
-    settings: ISettingRegistry.ISettings,
-    translator?: ITranslator
+    settings: ISettingRegistry.ISettings
   ) {
     super();
-    this.translator = translator || nullTranslator;
-    this._app = app;
     this._installed = [];
     this._searchResult = [];
     this.serviceManager = serviceManager;
@@ -179,10 +171,10 @@ export class ListModel extends VDomModel {
 
   private _listingIsLoaded(_: Lister, listings: ListResult) {
     this._listMode = listings!.mode;
-    this._blockedExtensionsArray = new Array<IListEntry>();
-    if (this._listMode === 'block') {
+    this._blacklistArray = new Array<IListEntry>();
+    if (this._listMode === 'black') {
       listings!.entries.map(e => {
-        this._blockedExtensionsArray.push({
+        this._blacklistArray.push({
           name: e.name,
           regexp: new RegExp(e.name),
           type: e.type,
@@ -192,10 +184,10 @@ export class ListModel extends VDomModel {
         });
       });
     }
-    this._allowedExtensionsArray = new Array<IListEntry>();
-    if (this._listMode === 'allow') {
+    this._whitelistArray = new Array<IListEntry>();
+    if (this._listMode === 'white') {
       listings!.entries.map(e => {
-        this._allowedExtensionsArray.push({
+        this._whitelistArray.push({
           name: e.name,
           regexp: new RegExp(e.name),
           type: e.type,
@@ -277,22 +269,22 @@ export class ListModel extends VDomModel {
   /**
    * The list mode.
    */
-  get listMode(): 'block' | 'allow' | 'default' | 'invalid' {
+  get listMode(): 'black' | 'white' | 'default' | 'invalid' {
     return this._listMode;
   }
 
   /**
-   * The total number of blockedExtensions results in the current search.
+   * The total number of blacklisted results in the current search.
    */
-  get totalblockedExtensionsFound(): number {
-    return this._totalblockedExtensionsFound;
+  get totalBlacklistedFound(): number {
+    return this._totalBlacklistedFound;
   }
 
   /**
-   * The total number of allowedExtensions results in the current search.
+   * The total number of whitelisted results in the current search.
    */
-  get totalallowedExtensionsFound(): number {
-    return this._totalallowedExtensionsFound;
+  get totalWhitelistedFound(): number {
+    return this._totalWhitelistedFound;
   }
 
   /**
@@ -327,7 +319,7 @@ export class ListModel extends VDomModel {
       // Updating
       await this._performAction('install', entry).then(data => {
         if (data.status !== 'ok') {
-          reportInstallError(entry.name, data.message, this.translator);
+          reportInstallError(entry.name, data.message);
         }
         return this.update();
       });
@@ -336,7 +328,7 @@ export class ListModel extends VDomModel {
       if (shouldInstall) {
         return this._performAction('install', entry).then(data => {
           if (data.status !== 'ok') {
-            reportInstallError(entry.name, data.message, this.translator);
+            reportInstallError(entry.name, data.message);
           }
           return this.update();
         });
@@ -395,12 +387,12 @@ export class ListModel extends VDomModel {
         if (!data || !data.jupyterlab || !data.jupyterlab.discovery) {
           return true;
         }
-        const discovery = data.jupyterlab.discovery;
-        const kernelCompanions: KernelCompanion[] = [];
+        let discovery = data.jupyterlab.discovery;
+        let kernelCompanions: KernelCompanion[] = [];
         if (discovery.kernel) {
           // match specs
-          for (const kernelInfo of discovery.kernel) {
-            const matches = Private.matchSpecs(
+          for (let kernelInfo of discovery.kernel) {
+            let matches = Private.matchSpecs(
               kernelInfo,
               this.serviceManager.kernelspecs.specs
             );
@@ -410,11 +402,7 @@ export class ListModel extends VDomModel {
         if (kernelCompanions.length < 1 && !discovery.server) {
           return true;
         }
-        return presentCompanions(
-          kernelCompanions,
-          discovery.server,
-          this.translator
-        );
+        return presentCompanions(kernelCompanions, discovery.server);
       });
   }
 
@@ -422,13 +410,13 @@ export class ListModel extends VDomModel {
    * Trigger a build check to incorporate actions taken.
    */
   triggerBuildCheck(): void {
-    const builder = this.serviceManager.builder;
+    let builder = this.serviceManager.builder;
     if (builder.isAvailable && !this.promptBuild) {
       const completed = builder.getStatus().then(response => {
         if (response.status === 'building') {
           // Piggy-back onto existing build
           // TODO: Can this cause dialog collision on build completion?
-          return doBuild(this._app, builder);
+          return doBuild(builder);
         }
         if (response.status !== 'needed') {
           return;
@@ -450,7 +438,7 @@ export class ListModel extends VDomModel {
       this.promptBuild = false;
       this.stateChanged.emit(undefined);
     }
-    const completed = doBuild(this._app, this.serviceManager.builder);
+    const completed = doBuild(this.serviceManager.builder);
     this._addPendingAction(completed);
   }
 
@@ -481,31 +469,23 @@ export class ListModel extends VDomModel {
   protected async translateSearchResult(
     res: Promise<ISearchResult>
   ): Promise<{ [key: string]: IEntry }> {
-    const entries: { [key: string]: IEntry } = {};
-    this._totalblockedExtensionsFound = 0;
-    this._totalallowedExtensionsFound = 0;
+    let entries: { [key: string]: IEntry } = {};
+    this._totalBlacklistedFound = 0;
+    this._totalWhitelistedFound = 0;
     this._totalEntries = 0;
-    for (const obj of (await res).objects) {
-      const pkg = obj.package;
+    for (let obj of (await res).objects) {
+      let pkg = obj.package;
       if (pkg.keywords.indexOf('deprecated') >= 0) {
         continue;
       }
       this._totalEntries = this._totalEntries + 1;
-      const isblockedExtensions = this.isListed(
-        pkg.name,
-        this._blockedExtensionsArray
-      );
-      if (isblockedExtensions) {
-        this._totalblockedExtensionsFound =
-          this._totalblockedExtensionsFound + 1;
+      const isBlacklisted = this.isListed(pkg.name, this._blacklistArray);
+      if (isBlacklisted) {
+        this._totalBlacklistedFound = this._totalBlacklistedFound + 1;
       }
-      const isallowedExtensions = this.isListed(
-        pkg.name,
-        this._allowedExtensionsArray
-      );
-      if (isallowedExtensions) {
-        this._totalallowedExtensionsFound =
-          this._totalallowedExtensionsFound + 1;
+      const isWhitelisted = this.isListed(pkg.name, this._whitelistArray);
+      if (isWhitelisted) {
+        this._totalWhitelistedFound = this._totalWhitelistedFound + 1;
       }
       entries[pkg.name] = {
         name: pkg.name,
@@ -521,8 +501,8 @@ export class ListModel extends VDomModel {
         status: null,
         latest_version: pkg.version,
         installed_version: '',
-        blockedExtensionsEntry: isblockedExtensions,
-        allowedExtensionsEntry: isallowedExtensions
+        blacklistEntry: isBlacklisted,
+        whitelistEntry: isWhitelisted
       };
     }
     return entries;
@@ -538,7 +518,7 @@ export class ListModel extends VDomModel {
   ): Promise<{ [key: string]: IEntry }> {
     const promises = [];
     const entries: { [key: string]: IEntry } = {};
-    for (const pkg of await res) {
+    for (let pkg of await res) {
       promises.push(
         res.then(info => {
           entries[pkg.name] = {
@@ -550,14 +530,8 @@ export class ListModel extends VDomModel {
             status: pkg.status,
             latest_version: pkg.latest_version,
             installed_version: pkg.installed_version,
-            blockedExtensionsEntry: this.isListed(
-              pkg.name,
-              this._blockedExtensionsArray
-            ),
-            allowedExtensionsEntry: this.isListed(
-              pkg.name,
-              this._allowedExtensionsArray
-            )
+            blacklistEntry: this.isListed(pkg.name, this._blacklistArray),
+            whitelistEntry: this.isListed(pkg.name, this._whitelistArray)
           };
         })
       );
@@ -625,12 +599,12 @@ export class ListModel extends VDomModel {
     }
 
     // Start the search without waiting for it:
-    const search = this.searcher.searchExtensions(
+    let search = this.searcher.searchExtensions(
       this.query,
       this.page,
       this.pagination
     );
-    const searchMapPromise = this.translateSearchResult(search);
+    let searchMapPromise = this.translateSearchResult(search);
 
     let searchMap: { [key: string]: IEntry };
     try {
@@ -685,14 +659,14 @@ export class ListModel extends VDomModel {
     const installedMap = await installedMapPromise;
 
     // Map results to attributes:
-    const installed: IEntry[] = [];
-    for (const key of Object.keys(installedMap)) {
+    let installed: IEntry[] = [];
+    for (let key of Object.keys(installedMap)) {
       installed.push(installedMap[key]);
     }
     this._installed = installed.sort(Private.comparator);
 
-    const searchResult: IEntry[] = [];
-    for (const key of Object.keys(searchMap)) {
+    let searchResult: IEntry[] = [];
+    for (let key of Object.keys(searchMap)) {
       // Filter out installed entries from search results:
       if (installedMap[key] === undefined) {
         searchResult.push(searchMap[key]);
@@ -720,7 +694,7 @@ export class ListModel extends VDomModel {
       EXTENSION_API_PATH,
       this.serverConnectionSettings.baseUrl
     );
-    const request: RequestInit = {
+    let request: RequestInit = {
       method: 'POST',
       body: JSON.stringify({
         cmd: action,
@@ -782,7 +756,7 @@ export class ListModel extends VDomModel {
   /**
    * Contains an error message if an error occurred when searching for lists.
    */
-  blockedExtensionsError: string | null = null;
+  blacklistError: string | null = null;
 
   /**
    * Contains an error message if an error occurred when querying the server extension.
@@ -821,8 +795,6 @@ export class ListModel extends VDomModel {
    */
   protected serviceManager: ServiceManager;
 
-  protected translator: ITranslator;
-  private _app: JupyterFrontEnd;
   private _query: string | null = null;
   private _page: number = 0;
   private _pagination: number = 250;
@@ -833,11 +805,11 @@ export class ListModel extends VDomModel {
   private _pendingActions: Promise<any>[] = [];
   private _debouncedUpdate: Debouncer<void, void>;
 
-  private _listMode: 'block' | 'allow' | 'default' | 'invalid';
-  private _blockedExtensionsArray: Array<IListEntry>;
-  private _allowedExtensionsArray: Array<IListEntry>;
-  private _totalblockedExtensionsFound: number = 0;
-  private _totalallowedExtensionsFound: number = 0;
+  private _listMode: 'black' | 'white' | 'default' | 'invalid';
+  private _blacklistArray: Array<IListEntry>;
+  private _whitelistArray: Array<IListEntry>;
+  private _totalBlacklistedFound: number = 0;
+  private _totalWhitelistedFound: number = 0;
 }
 
 let _isDisclaimed = false;
@@ -872,15 +844,15 @@ export namespace ListModel {
  */
 namespace Private {
   /**
-   * A comparator function that sorts allowedExtensions orgs to the top.
+   * A comparator function that sorts whitelisted orgs to the top.
    */
   export function comparator(a: IEntry, b: IEntry): number {
     if (a.name === b.name) {
       return 0;
     }
 
-    const testA = isJupyterOrg(a.name);
-    const testB = isJupyterOrg(b.name);
+    let testA = isJupyterOrg(a.name);
+    let testB = isJupyterOrg(b.name);
 
     if (testA === testB) {
       // Retain sort-order from API
@@ -905,7 +877,7 @@ namespace Private {
     if (!specs) {
       return [];
     }
-    const matches: KernelSpec.ISpecModel[] = [];
+    let matches: KernelSpec.ISpecModel[] = [];
     let reLang: RegExp | null = null;
     let reName: RegExp | null = null;
     if (kernelInfo.kernel_spec.language) {
@@ -914,8 +886,8 @@ namespace Private {
     if (kernelInfo.kernel_spec.display_name) {
       reName = new RegExp(kernelInfo.kernel_spec.display_name);
     }
-    for (const key of Object.keys(specs.kernelspecs)) {
-      const spec = specs.kernelspecs[key]!;
+    for (let key of Object.keys(specs.kernelspecs)) {
+      let spec = specs.kernelspecs[key]!;
       let match = false;
       if (reLang) {
         match = reLang.test(spec.language);

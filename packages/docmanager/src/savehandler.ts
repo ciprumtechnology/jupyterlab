@@ -19,7 +19,7 @@ export class SaveHandler implements IDisposable {
    */
   constructor(options: SaveHandler.IOptions) {
     this._context = options.context;
-    const interval = options.saveInterval || 120;
+    let interval = options.saveInterval || 120;
     this._minInterval = interval * 1000;
     this._interval = this._minInterval;
     // Restart the timer when the contents model is updated.
@@ -99,7 +99,7 @@ export class SaveHandler implements IDisposable {
    * Handle an autosave timeout.
    */
   private _save(): void {
-    const context = this._context;
+    let context = this._context;
 
     // Trigger the next update.
     this._setTimer();
@@ -110,19 +110,19 @@ export class SaveHandler implements IDisposable {
 
     // Bail if the model is not dirty or the file is not writable, or the dialog
     // is already showing.
-    const writable = context.contentsModel && context.contentsModel.writable;
+    let writable = context.contentsModel && context.contentsModel.writable;
     if (!writable || !context.model.dirty || this._inDialog) {
       return;
     }
 
-    const start = new Date().getTime();
+    let start = new Date().getTime();
     context
       .save()
       .then(() => {
         if (this.isDisposed) {
           return;
         }
-        const duration = new Date().getTime() - start;
+        let duration = new Date().getTime() - start;
         // New save interval: higher of 10x save duration or min interval.
         this._interval = Math.max(
           this._multiplier * duration,
@@ -133,7 +133,6 @@ export class SaveHandler implements IDisposable {
       })
       .catch(err => {
         // If the user canceled the save, do nothing.
-        // FIXME-TRANS: Is this affected by localization?
         if (err.message === 'Cancel') {
           return;
         }

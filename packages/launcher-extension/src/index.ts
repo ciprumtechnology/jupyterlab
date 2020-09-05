@@ -8,7 +8,6 @@ import {
 } from '@jupyterlab/application';
 import { ICommandPalette, MainAreaWidget } from '@jupyterlab/apputils';
 import { ILauncher, LauncherModel, Launcher } from '@jupyterlab/launcher';
-import { ITranslator } from '@jupyterlab/translation';
 import { launcherIcon } from '@jupyterlab/ui-components';
 
 import { toArray } from '@lumino/algorithm';
@@ -28,7 +27,7 @@ namespace CommandIDs {
 const plugin: JupyterFrontEndPlugin<ILauncher> = {
   activate,
   id: '@jupyterlab/launcher-extension:plugin',
-  requires: [ILabShell, ITranslator],
+  requires: [ILabShell],
   optional: [ICommandPalette],
   provides: ILauncher,
   autoStart: true
@@ -45,34 +44,26 @@ export default plugin;
 function activate(
   app: JupyterFrontEnd,
   labShell: ILabShell,
-  translator: ITranslator,
   palette: ICommandPalette | null
 ): ILauncher {
   const { commands } = app;
-  const trans = translator.load('jupyterlab');
   const model = new LauncherModel();
 
   commands.addCommand(CommandIDs.create, {
-    label: trans.__('New Launcher'),
+    label: 'New Launcher',
     execute: (args: JSONObject) => {
       const cwd = args['cwd'] ? String(args['cwd']) : '';
       const id = `launcher-${Private.id++}`;
       const callback = (item: Widget) => {
         labShell.add(item, 'main', { ref: id });
       };
-      const launcher = new Launcher({
-        model,
-        cwd,
-        callback,
-        commands,
-        translator
-      });
+      const launcher = new Launcher({ model, cwd, callback, commands });
 
       launcher.model = model;
       launcher.title.icon = launcherIcon;
-      launcher.title.label = trans.__('Launcher');
+      launcher.title.label = 'Launcher';
 
-      const main = new MainAreaWidget({ content: launcher });
+      let main = new MainAreaWidget({ content: launcher });
 
       // If there are any other widgets open, remove the launcher close icon.
       main.title.closable = !!toArray(labShell.widgets('main')).length;
@@ -90,10 +81,7 @@ function activate(
   });
 
   if (palette) {
-    palette.addItem({
-      command: CommandIDs.create,
-      category: trans.__('Launcher')
-    });
+    palette.addItem({ command: CommandIDs.create, category: 'Launcher' });
   }
 
   return model;

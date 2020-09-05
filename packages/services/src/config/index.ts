@@ -10,7 +10,7 @@ import { ServerConnection } from '..';
 /**
  * The url for the config service.
  */
-const SERVICE_CONFIG_URL = 'api/config';
+let SERVICE_CONFIG_URL = 'api/config';
 
 /**
  * A Configurable data section.
@@ -49,7 +49,7 @@ export namespace ConfigSection {
   export function create(
     options: ConfigSection.IOptions
   ): Promise<IConfigSection> {
-    const section = new DefaultConfigSection(options);
+    let section = new DefaultConfigSection(options);
     return section.load().then(() => {
       return section;
     });
@@ -79,7 +79,7 @@ class DefaultConfigSection implements IConfigSection {
    * Construct a new config section.
    */
   constructor(options: ConfigSection.IOptions) {
-    const settings = (this.serverSettings =
+    let settings = (this.serverSettings =
       options.serverSettings ?? ServerConnection.makeSettings());
     this._url = URLExt.join(
       settings.baseUrl,
@@ -108,17 +108,17 @@ class DefaultConfigSection implements IConfigSection {
    *
    * The promise is fulfilled on a valid response and rejected otherwise.
    */
-  async load(): Promise<void> {
-    const response = await ServerConnection.makeRequest(
-      this._url,
-      {},
-      this.serverSettings
-    );
-    if (response.status !== 200) {
-      const err = await ServerConnection.ResponseError.create(response);
-      throw err;
-    }
-    this._data = await response.json();
+  load(): Promise<void> {
+    return ServerConnection.makeRequest(this._url, {}, this.serverSettings)
+      .then(response => {
+        if (response.status !== 200) {
+          throw new ServerConnection.ResponseError(response);
+        }
+        return response.json();
+      })
+      .then(data => {
+        this._data = data;
+      });
   }
 
   /**
@@ -133,23 +133,23 @@ class DefaultConfigSection implements IConfigSection {
    * and updates the local data with the response, and fulfils the promise
    * with that data.
    */
-  async update(newdata: JSONObject): Promise<JSONObject> {
+  update(newdata: JSONObject): Promise<JSONObject> {
     this._data = { ...this._data, ...newdata };
-    const init = {
+    let init = {
       method: 'PATCH',
       body: JSON.stringify(newdata)
     };
-    const response = await ServerConnection.makeRequest(
-      this._url,
-      init,
-      this.serverSettings
-    );
-    if (response.status !== 200) {
-      const err = await ServerConnection.ResponseError.create(response);
-      throw err;
-    }
-    this._data = await response.json();
-    return this._data;
+    return ServerConnection.makeRequest(this._url, init, this.serverSettings)
+      .then(response => {
+        if (response.status !== 200) {
+          throw new ServerConnection.ResponseError(response);
+        }
+        return response.json();
+      })
+      .then(data => {
+        this._data = data;
+        return this._data;
+      });
   }
 
   private _url = 'unknown';
@@ -173,7 +173,7 @@ export class ConfigWithDefaults {
    * Get data from the config section or fall back to defaults.
    */
   get(key: string): JSONValue {
-    const data = this._classData();
+    let data = this._classData();
     return key in data ? data[key] : this._defaults[key];
   }
 
@@ -189,10 +189,10 @@ export class ConfigWithDefaults {
    * immediately.
    */
   set(key: string, value: JSONValue): Promise<JSONValue> {
-    const d: JSONObject = {};
+    let d: JSONObject = {};
     d[key] = value;
     if (this._className) {
-      const d2: JSONObject = {};
+      let d2: JSONObject = {};
       d2[this._className] = d;
       return this._section.update(d2);
     } else {
@@ -207,7 +207,7 @@ export class ConfigWithDefaults {
    * If we have no classname, get all of the data in the Section
    */
   private _classData(): JSONObject {
-    const data = this._section.data;
+    let data = this._section.data;
     if (this._className && this._className in data) {
       return data[this._className] as JSONObject;
     }

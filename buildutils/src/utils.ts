@@ -33,7 +33,7 @@ export function getLernaPaths(basePath = '.'): string[] {
     throw e;
   }
   let paths: string[] = [];
-  for (const config of packages) {
+  for (let config of packages) {
     paths = paths.concat(glob.sync(path.join(basePath, config)));
   }
   return paths.filter(pkgPath => {
@@ -45,7 +45,7 @@ export function getLernaPaths(basePath = '.'): string[] {
  * Get all of the core package paths.
  */
 export function getCorePaths(): string[] {
-  const spec = path.resolve(path.join('.', 'packages', '*'));
+  let spec = path.resolve(path.join('.', 'packages', '*'));
   return glob.sync(spec);
 }
 
@@ -59,8 +59,11 @@ export function getCorePaths(): string[] {
  * @returns Whether the file has changed.
  */
 export function writePackageData(pkgJsonPath: string, data: any): boolean {
-  const text = JSON.stringify(sortPackageJson(data), null, 2) + '\n';
-  const orig = fs.readFileSync(pkgJsonPath, 'utf8').split('\r\n').join('\n');
+  let text = JSON.stringify(sortPackageJson(data), null, 2) + '\n';
+  let orig = fs
+    .readFileSync(pkgJsonPath, 'utf8')
+    .split('\r\n')
+    .join('\n');
   if (text !== orig) {
     fs.writeFileSync(pkgJsonPath, text, 'utf8');
     return true;
@@ -97,7 +100,7 @@ export function writeJSONFile(filePath: string, data: any): boolean {
             }, {})
       : value;
   }
-  const text = JSON.stringify(data, sortObjByKey(data), 2) + '\n';
+  let text = JSON.stringify(data, sortObjByKey(data), 2) + '\n';
   let orig = {};
   try {
     orig = readJSONFile(filePath);
@@ -147,8 +150,8 @@ export function fromTemplate(
       // try to match the indentation level of the {{var}} in the input template.
       templ = templ.split(`{{${key}}}`).reduce((acc, cur) => {
         // Regex: 0 or more non-newline whitespaces followed by end of string
-        const indentRe = acc.match(/([^\S\r\n]*).*$/);
-        const indent = indentRe ? indentRe[1] : '';
+        let indentRe = acc.match(/([^\S\r\n]*).*$/);
+        let indent = indentRe ? indentRe[1] : '';
         return acc + val.split('\n').join('\n' + indent) + cur;
       });
     } else {
@@ -195,7 +198,7 @@ export function prebump() {
   run('python -m pip install bump2version');
 
   // Make sure we start in a clean git state.
-  const status = run('git status --porcelain', {
+  let status = run('git status --porcelain', {
     stdio: 'pipe',
     encoding: 'utf8'
   });
@@ -217,8 +220,8 @@ export function postbump() {
   const curr = getPythonVersion();
 
   // Update the dev mode version.
-  const filePath = path.resolve(path.join('.', 'dev_mode', 'package.json'));
-  const data = readJSONFile(filePath);
+  let filePath = path.resolve(path.join('.', 'dev_mode', 'package.json'));
+  let data = readJSONFile(filePath);
   data.jupyterlab.version = curr;
   writeJSONFile(filePath, data);
 
@@ -239,7 +242,7 @@ export function run(
   options = options || {};
   options['stdio'] = options.stdio || 'inherit';
   if (!quiet) {
-    console.debug('>', cmd);
+    console.log('>', cmd);
   }
   const value = childProcess.execSync(cmd, options);
   if (value === null) {
@@ -343,7 +346,10 @@ export function ensureUnixPathSep(source: string) {
  * @returns the last part of the path, sans extension.
  */
 export function stem(pathArg: string): string {
-  return path.basename(pathArg).split('.').shift()!;
+  return path
+    .basename(pathArg)
+    .split('.')
+    .shift()!;
 }
 
 /**
@@ -358,7 +364,7 @@ export function stem(pathArg: string): string {
  * @returns the camel case version of the input string.
  */
 export function camelCase(str: string, upper: boolean = false): string {
-  return str.replace(/(?:^\w|[A-Z]|\b\w|\s+|-+|_+)/g, function (match, index) {
+  return str.replace(/(?:^\w|[A-Z]|\b\w|\s+|-+|_+)/g, function(match, index) {
     if (+match === 0 || match[0] === '-') {
       return '';
     } else if (index === 0 && !upper) {

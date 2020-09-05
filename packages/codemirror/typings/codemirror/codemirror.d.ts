@@ -25,6 +25,14 @@ declare module 'codemirror' {
    */
   function defineMIME(mimetype: string, mode: any): void;
 
+  interface modeinfo {
+    ext: string[];
+    mime: string;
+    mode: string;
+    name: string;
+  }
+  var modeInfo: modeinfo[];
+
   /**
    * A mode that encompasses many mode types.
    */
@@ -99,9 +107,5 @@ declare module 'codemirror' {
 
   interface StringStream {
     lineOracle: Context;
-  }
-
-  interface EditorConfiguration {
-    lineSeparator?: string | null;
   }
 }

@@ -1,15 +1,15 @@
 #!/usr/bin/env node
-const pkg = require('./staging/package.json');
+var pkg = require('./staging/package.json');
 
 function parser(part) {
   return parseInt(part, 10);
 }
 
-const engine = pkg.engines.node.replace('>=', '');
-const eparts = engine.split('.').map(parser);
+var engine = pkg.engines.node.replace('>=', '');
+var eparts = engine.split('.').map(parser);
 
-const version = process.version.replace('v', '');
-const vparts = version.split('.').map(parser);
+var version = process.version.replace('v', '');
+var vparts = version.split('.').map(parser);
 
 // eslint-disable-next-line
 console.log('Node', process.version);

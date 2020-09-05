@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -88,13 +88,11 @@ export class Router implements IRouter {
       return this.reload();
     }
 
-    if (!options.skipRouting) {
-      // Because a `route()` call may still be in the stack after having received
-      // a `stop` token, wait for the next stack frame before calling `route()`.
-      requestAnimationFrame(() => {
-        void this.route();
-      });
-    }
+    // Because a `route()` call may still be in the stack after having received
+    // a `stop` token, wait for the next stack frame before calling `route()`.
+    requestAnimationFrame(() => {
+      void this.route();
+    });
   }
 
   /**
@@ -164,7 +162,7 @@ export class Router implements IRouter {
         const result = await commands.execute(command, current);
         if (result === stop) {
           queue.length = 0;
-          console.debug(`Routing ${request} was short-circuited by ${command}`);
+          console.log(`Routing ${request} was short-circuited by ${command}`);
         }
       } catch (reason) {
         console.warn(`Routing ${request} to ${command} failed`, reason);

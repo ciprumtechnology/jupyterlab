@@ -8,8 +8,8 @@ import { log } from './log';
 
 export async function main() {
   // Start a python kernel
-  const kernelManager = new KernelManager();
-  const kernel = await kernelManager.startNew({ name: 'python' });
+  let kernelManager = new KernelManager();
+  let kernel = await kernelManager.startNew({ name: 'python' });
 
   log('Register a comm target in the kernel');
   await kernel.requestExecute({
@@ -23,7 +23,7 @@ kernel.comm_manager.register_target('test', comm_opened)
   }).done;
 
   log('Create a comm');
-  const comm = kernel.createComm('test');
+  let comm = kernel.createComm('test');
 
   log('Open the comm');
   await comm.open('initial state').done;
@@ -33,22 +33,22 @@ kernel.comm_manager.register_target('test', comm_opened)
   await comm.close('bye').done;
 
   log('Register a comm target in the browser');
-  const done = new PromiseDelegate();
+  let done = new PromiseDelegate();
   kernel.registerCommTarget('test2', (comm, commMsg) => {
     if (commMsg.content.target_name !== 'test2') {
       return;
     }
     comm.onMsg = msg => {
-      log(msg.content.data);
+      console.log(msg.content.data);
     };
     comm.onClose = msg => {
-      log(msg.content.data);
+      console.log(msg.content.data);
       done.resolve(undefined);
     };
   });
 
   log('Create a corresponding comm from the kernel');
-  const code = `
+  let code = `
 from ipykernel.comm import Comm
 comm = Comm(target_name="test2")
 comm.send(data="comm sent message")

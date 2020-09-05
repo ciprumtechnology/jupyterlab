@@ -15,10 +15,6 @@ import {
   ForeignHandler
 } from '@jupyterlab/console';
 
-import { ISettingRegistry } from '@jupyterlab/settingregistry';
-
-import { ITranslator } from '@jupyterlab/translation';
-
 import { AttachedProperty } from '@lumino/properties';
 
 import { ReadonlyPartialJSONObject } from '@lumino/coreutils';
@@ -28,7 +24,7 @@ import { ReadonlyPartialJSONObject } from '@lumino/coreutils';
  */
 export const foreign: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/console-extension:foreign',
-  requires: [IConsoleTracker, ISettingRegistry, ITranslator],
+  requires: [IConsoleTracker],
   optional: [ICommandPalette],
   activate: activateForeign,
   autoStart: true
@@ -39,11 +35,8 @@ export default foreign;
 function activateForeign(
   app: JupyterFrontEnd,
   tracker: IConsoleTracker,
-  settingRegistry: ISettingRegistry,
-  translator: ITranslator,
   palette: ICommandPalette | null
 ) {
-  const trans = translator.load('jupyterlab');
   const { shell } = app;
   tracker.widgetAdded.connect((sender, widget) => {
     const console = widget.console;
@@ -53,28 +46,19 @@ function activateForeign(
       parent: console
     });
     Private.foreignHandlerProperty.set(console, handler);
-
-    // Property showAllKernelActivity configures foreign handler enabled on start.
-    void settingRegistry
-      .get('@jupyterlab/console-extension:tracker', 'showAllKernelActivity')
-      .then(({ composite }) => {
-        const showAllKernelActivity = composite as boolean;
-        handler.enabled = showAllKernelActivity;
-      });
-
     console.disposed.connect(() => {
       handler.dispose();
     });
   });
 
   const { commands } = app;
-  const category = trans.__('Console');
+  const category = 'Console';
   const toggleShowAllActivity = 'console:toggle-show-all-kernel-activity';
 
   // Get the current widget and activate unless the args specify otherwise.
   function getCurrent(args: ReadonlyPartialJSONObject): ConsolePanel | null {
-    const widget = tracker.currentWidget;
-    const activate = args['activate'] !== false;
+    let widget = tracker.currentWidget;
+    let activate = args['activate'] !== false;
     if (activate && widget) {
       shell.activateById(widget.id);
     }
@@ -82,9 +66,9 @@ function activateForeign(
   }
 
   commands.addCommand(toggleShowAllActivity, {
-    label: args => trans.__('Show All Kernel Activity'),
+    label: args => 'Show All Kernel Activity',
     execute: args => {
-      const current = getCurrent(args);
+      let current = getCurrent(args);
       if (!current) {
         return;
       }

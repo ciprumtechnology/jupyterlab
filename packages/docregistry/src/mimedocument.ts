@@ -11,12 +11,6 @@ import {
   MimeModel
 } from '@jupyterlab/rendermime';
 
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
-
 import { PromiseDelegate, JSONExt, PartialJSONObject } from '@lumino/coreutils';
 
 import { Message, MessageLoop } from '@lumino/messaging';
@@ -37,8 +31,6 @@ export class MimeContent extends Widget {
   constructor(options: MimeContent.IOptions) {
     super();
     this.addClass('jp-MimeDocument');
-    this.translator = options.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this.mimeType = options.mimeType;
     this._dataType = options.dataType || 'string';
     this._context = options.context;
@@ -75,7 +67,7 @@ export class MimeContent extends Widget {
           this.dispose();
         });
         void showErrorMessage(
-          this._trans.__('Renderer Failure: %1', this._context.path),
+          `Renderer Failure: ${this._context.path}`,
           reason
         );
       });
@@ -149,15 +141,15 @@ export class MimeContent extends Widget {
 
     // Set up for this rendering pass.
     this._renderRequested = false;
-    const context = this._context;
-    const model = context.model;
-    const data: PartialJSONObject = {};
+    let context = this._context;
+    let model = context.model;
+    let data: PartialJSONObject = {};
     if (this._dataType === 'string') {
       data[this.mimeType] = model.toString();
     } else {
       data[this.mimeType] = model.toJSON();
     }
-    const mimeModel = new MimeModel({
+    let mimeModel = new MimeModel({
       data,
       callback: this._changeCallback,
       metadata: { fragment: this._fragment }
@@ -178,10 +170,7 @@ export class MimeContent extends Widget {
       requestAnimationFrame(() => {
         this.dispose();
       });
-      void showErrorMessage(
-        this._trans.__('Renderer Failure: %1', context.path),
-        reason
-      );
+      void showErrorMessage(`Renderer Failure: ${context.path}`, reason);
     }
   }
 
@@ -194,7 +183,7 @@ export class MimeContent extends Widget {
     if (!options.data || !options.data[this.mimeType]) {
       return;
     }
-    const data = options.data[this.mimeType];
+    let data = options.data[this.mimeType];
     if (typeof data === 'string') {
       if (data !== this._context.model.toString()) {
         this._context.model.fromString(data);
@@ -210,8 +199,6 @@ export class MimeContent extends Widget {
 
   readonly renderer: IRenderMime.IRenderer;
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _context: DocumentRegistry.IContext<DocumentRegistry.IModel>;
   private _fragment = '';
   private _monitor: ActivityMonitor<DocumentRegistry.IModel, void> | null;
@@ -253,11 +240,6 @@ export namespace MimeContent {
      * Preferred data type from the model.
      */
     dataType?: 'string' | 'json';
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 }
 

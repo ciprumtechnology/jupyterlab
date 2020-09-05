@@ -69,8 +69,7 @@ export interface IObservableUndoableList<T> extends IObservableList<T> {
 /**
  * A concrete implementation of an observable undoable list.
  */
-export class ObservableUndoableList<T>
-  extends ObservableList<T>
+export class ObservableUndoableList<T> extends ObservableList<T>
   implements IObservableUndoableList<T> {
   /**
    * Construct a new undoable observable list.
@@ -125,9 +124,9 @@ export class ObservableUndoableList<T>
     if (!this.canUndo) {
       return;
     }
-    const changes = this._stack[this._index];
+    let changes = this._stack[this._index];
     this._isUndoable = false;
-    for (const change of changes.reverse()) {
+    for (let change of changes.reverse()) {
       this._undoChange(change);
     }
     this._isUndoable = true;
@@ -142,9 +141,9 @@ export class ObservableUndoableList<T>
       return;
     }
     this._index++;
-    const changes = this._stack[this._index];
+    let changes = this._stack[this._index];
     this._isUndoable = false;
-    for (const change of changes) {
+    for (let change of changes) {
       this._redoChange(change);
     }
     this._isUndoable = true;
@@ -173,7 +172,7 @@ export class ObservableUndoableList<T>
       this._stack = this._stack.slice(0, this._index + 1);
     }
     // Copy the change.
-    const evt = this._copyChange(change);
+    let evt = this._copyChange(change);
     // Put the change in the stack.
     if (this._stack[this._index + 1]) {
       this._stack[this._index + 1].push(evt);
@@ -193,7 +192,7 @@ export class ObservableUndoableList<T>
    */
   private _undoChange(change: IObservableList.IChangedArgs<JSONValue>): void {
     let index = 0;
-    const serializer = this._serializer;
+    let serializer = this._serializer;
     switch (change.type) {
       case 'add':
         each(change.newValues, () => {
@@ -225,7 +224,7 @@ export class ObservableUndoableList<T>
    */
   private _redoChange(change: IObservableList.IChangedArgs<JSONValue>): void {
     let index = 0;
-    const serializer = this._serializer;
+    let serializer = this._serializer;
     switch (change.type) {
       case 'add':
         index = change.newIndex;
@@ -258,11 +257,11 @@ export class ObservableUndoableList<T>
   private _copyChange(
     change: IObservableList.IChangedArgs<T>
   ): IObservableList.IChangedArgs<JSONValue> {
-    const oldValues: JSONValue[] = [];
+    let oldValues: JSONValue[] = [];
     each(change.oldValues, value => {
       oldValues.push(this._serializer.toJSON(value));
     });
-    const newValues: JSONValue[] = [];
+    let newValues: JSONValue[] = [];
     each(change.newValues, value => {
       newValues.push(this._serializer.toJSON(value));
     });

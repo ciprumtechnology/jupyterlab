@@ -7,22 +7,19 @@ import { INotebookTools, INotebookTracker } from '@jupyterlab/notebook';
 
 import { TagTool } from '@jupyterlab/celltags';
 
-import { ITranslator } from '@jupyterlab/translation';
-
 /**
  * Initialization data for the celltags extension.
  */
 const celltags: JupyterFrontEndPlugin<void> = {
-  id: '@jupyterlab/celltags',
+  id: 'celltags',
   autoStart: true,
-  requires: [INotebookTools, INotebookTracker, ITranslator],
+  requires: [INotebookTools, INotebookTracker],
   activate: (
     app: JupyterFrontEnd,
     tools: INotebookTools,
-    tracker: INotebookTracker,
-    translator: ITranslator
+    tracker: INotebookTracker
   ) => {
-    const tool = new TagTool(tracker, app, translator);
+    const tool = new TagTool(tracker, app);
     tools.addItem({ tool: tool, rank: 1.6 });
   }
 };

@@ -27,11 +27,6 @@ import {
 
 import { CellList } from './celllist';
 import { showDialog, Dialog } from '@jupyterlab/apputils';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 
 /**
  * The definition of a model object for a notebook widget.
@@ -77,17 +72,15 @@ export class NotebookModel extends DocumentModel implements INotebookModel {
    */
   constructor(options: NotebookModel.IOptions = {}) {
     super(options.languagePreference, options.modelDB);
-    const factory =
-      options.contentFactory || NotebookModel.defaultContentFactory;
+    let factory = options.contentFactory || NotebookModel.defaultContentFactory;
     this.contentFactory = factory.clone(this.modelDB.view('cells'));
     this._cells = new CellList(this.modelDB, this.contentFactory);
-    this._trans = (options.translator || nullTranslator).load('jupyterlab');
     this._cells.changed.connect(this._onCellsChanged, this);
 
     // Handle initial metadata.
-    const metadata = this.modelDB.createMap('metadata');
+    let metadata = this.modelDB.createMap('metadata');
     if (!metadata.has('language_info')) {
-      const name = options.languagePreference || '';
+      let name = options.languagePreference || '';
       metadata.set('language_info', { name });
     }
     this._ensureMetadata();
@@ -132,9 +125,7 @@ export class NotebookModel extends DocumentModel implements INotebookModel {
    * The default kernel name of the document.
    */
   get defaultKernelName(): string {
-    const spec = this.metadata.get(
-      'kernelspec'
-    ) as nbformat.IKernelspecMetadata;
+    let spec = this.metadata.get('kernelspec') as nbformat.IKernelspecMetadata;
     return spec ? spec.name : '';
   }
 
@@ -149,7 +140,7 @@ export class NotebookModel extends DocumentModel implements INotebookModel {
    * The default kernel language of the document.
    */
   get defaultKernelLanguage(): string {
-    const info = this.metadata.get(
+    let info = this.metadata.get(
       'language_info'
     ) as nbformat.ILanguageInfoMetadata;
     return info ? info.name : '';
@@ -163,7 +154,7 @@ export class NotebookModel extends DocumentModel implements INotebookModel {
     if (this.isDisposed) {
       return;
     }
-    const cells = this.cells;
+    let cells = this.cells;
     this._cells = null!;
     cells.dispose();
     super.dispose();
@@ -190,14 +181,14 @@ export class NotebookModel extends DocumentModel implements INotebookModel {
    * Serialize the model to JSON.
    */
   toJSON(): nbformat.INotebookContent {
-    const cells: nbformat.ICell[] = [];
+    let cells: nbformat.ICell[] = [];
     for (let i = 0; i < (this.cells?.length || 0); i++) {
-      const cell = this.cells.get(i);
+      let cell = this.cells.get(i);
       cells.push(cell.toJSON());
     }
     this._ensureMetadata();
-    const metadata = Object.create(null) as nbformat.INotebookMetadata;
-    for (const key of this.metadata.keys()) {
+    let metadata = Object.create(null) as nbformat.INotebookMetadata;
+    for (let key of this.metadata.keys()) {
       metadata[key] = JSON.parse(JSON.stringify(this.metadata.get(key)));
     }
     return {
@@ -215,9 +206,9 @@ export class NotebookModel extends DocumentModel implements INotebookModel {
    * Should emit a [contentChanged] signal.
    */
   fromJSON(value: nbformat.INotebookContent): void {
-    const cells: ICellModel[] = [];
-    const factory = this.contentFactory;
-    for (const cell of value.cells) {
+    let cells: ICellModel[] = [];
+    let factory = this.contentFactory;
+    for (let cell of value.cells) {
       switch (cell.cell_type) {
         case 'code':
           cells.push(factory.createCodeCell({ cell }));
@@ -257,40 +248,28 @@ export class NotebookModel extends DocumentModel implements INotebookModel {
     // Alert the user if the format changes.
     if (origNbformat !== undefined && this._nbformat !== origNbformat) {
       const newer = this._nbformat > origNbformat;
-      let msg: string;
-
-      if (newer) {
-        msg = this._trans.__(
-          `This notebook has been converted from an older notebook format (v%1)
-to the current notebook format (v%2).
-The next time you save this notebook, the current notebook format (vthis._nbformat) will be used.
-'Older versions of Jupyter may not be able to read the new format.' To preserve the original format version,
-close the notebook without saving it.`,
-          origNbformat,
-          this._nbformat
-        );
-      } else {
-        msg = this._trans.__(
-          `This notebook has been converted from an newer notebook format (v%1)
-to the current notebook format (v%2).
-The next time you save this notebook, the current notebook format (v%2) will be used.
-Some features of the original notebook may not be available.' To preserve the original format version,
-close the notebook without saving it.`,
-          origNbformat,
-          this._nbformat
-        );
-      }
+      const msg = `This notebook has been converted from ${
+        newer ? 'an older' : 'a newer'
+      } notebook format (v${origNbformat}) to the current notebook format (v${
+        this._nbformat
+      }). The next time you save this notebook, the current notebook format (v${
+        this._nbformat
+      }) will be used. ${
+        newer
+          ? 'Older versions of Jupyter may not be able to read the new format.'
+          : 'Some features of the original notebook may not be available.'
+      }  To preserve the original format version, close the notebook without saving it.`;
       void showDialog({
-        title: this._trans.__('Notebook converted'),
+        title: 'Notebook converted',
         body: msg,
-        buttons: [Dialog.okButton({ label: this._trans.__('Ok') })]
+        buttons: [Dialog.okButton()]
       });
     }
 
     // Update the metadata.
     this.metadata.clear();
-    const metadata = value.metadata;
-    for (const key in metadata) {
+    let metadata = value.metadata;
+    for (let key in metadata) {
       // orig_nbformat is not intended to be stored per spec.
       if (key === 'orig_nbformat') {
         continue;
@@ -311,7 +290,7 @@ close the notebook without saving it.`,
   initialize(): void {
     super.initialize();
     if (!this.cells.length) {
-      const factory = this.contentFactory;
+      let factory = this.contentFactory;
       this.cells.push(factory.createCodeCell({}));
     }
     this.cells.clearUndo();
@@ -347,7 +326,7 @@ close the notebook without saving it.`,
    * Make sure we have the required metadata fields.
    */
   private _ensureMetadata(): void {
-    const metadata = this.metadata;
+    let metadata = this.metadata;
     if (!metadata.has('language_info')) {
       metadata.set('language_info', { name: '' });
     }
@@ -356,7 +335,6 @@ close the notebook without saving it.`,
     }
   }
 
-  private _trans: TranslationBundle;
   private _cells: CellList;
   private _nbformat = nbformat.MAJOR_VERSION;
   private _nbformatMinor = nbformat.MINOR_VERSION;
@@ -387,11 +365,6 @@ export namespace NotebookModel {
      * A modelDB for storing notebook data.
      */
     modelDB?: IModelDB;
-
-    /**
-     * Language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**
@@ -495,8 +468,10 @@ export namespace NotebookModel {
       switch (type) {
         case 'code':
           return this.createCodeCell(opts);
+          break;
         case 'markdown':
           return this.createMarkdownCell(opts);
+          break;
         case 'raw':
         default:
           return this.createRawCell(opts);

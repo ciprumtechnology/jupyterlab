@@ -28,11 +28,6 @@ import { IDisposable } from '@lumino/disposable';
 import { Poll } from '@lumino/polling';
 
 import { ISignal, Signal } from '@lumino/signaling';
-import {
-  nullTranslator,
-  TranslationBundle,
-  ITranslator
-} from '@jupyterlab/translation';
 
 /**
  * The default duration of the auto-refresh in ms
@@ -73,10 +68,8 @@ export class FileBrowserModel implements IDisposable {
    */
   constructor(options: FileBrowserModel.IOptions) {
     this.manager = options.manager;
-    this.translator = options.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this._driveName = options.driveName || '';
-    const rootPath = this._driveName ? this._driveName + ':' : '';
+    let rootPath = this._driveName ? this._driveName + ':' : '';
     this._model = {
       path: rootPath,
       name: PathExt.basename(rootPath),
@@ -97,7 +90,7 @@ export class FileBrowserModel implements IDisposable {
 
     this._unloadEventListener = (e: Event) => {
       if (this._uploads.length > 0) {
-        const confirmationMessage = this._trans.__('Files still uploading');
+        const confirmationMessage = 'Files still uploading';
 
         (e as any).returnValue = confirmationMessage;
         return confirmationMessage;
@@ -238,7 +231,6 @@ export class FileBrowserModel implements IDisposable {
   async refresh(): Promise<void> {
     await this._poll.refresh();
     await this._poll.tick;
-    this._refreshed.emit(void 0);
   }
 
   /**
@@ -250,7 +242,8 @@ export class FileBrowserModel implements IDisposable {
    */
   async cd(newValue = '.'): Promise<void> {
     if (newValue !== '.') {
-      newValue = this.manager.services.contents.resolvePath(
+      newValue = Private.normalizePath(
+        this.manager.services.contents,
         this._model.path,
         newValue
       );
@@ -265,13 +258,13 @@ export class FileBrowserModel implements IDisposable {
       // Otherwise wait for the pending request to complete before continuing.
       await this._pending;
     }
-    const oldValue = this.path;
-    const options: Contents.IFetchOptions = { content: true };
+    let oldValue = this.path;
+    let options: Contents.IFetchOptions = { content: true };
     this._pendingPath = newValue;
     if (oldValue !== newValue) {
       this._sessions.length = 0;
     }
-    const services = this.manager.services;
+    let services = this.manager.services;
     this._pending = services.contents
       .get(newValue, options)
       .then(contents => {
@@ -301,10 +294,7 @@ export class FileBrowserModel implements IDisposable {
         this._pendingPath = null;
         this._pending = null;
         if (error.response && error.response.status === 404) {
-          error.message = this._trans.__(
-            'Directory not found: "%1"',
-            this._model.path
-          );
+          error.message = `Directory not found: "${this._model.path}"`;
           console.error(error);
           this._connectionFailure.emit(error);
           return this.cd('/');
@@ -325,7 +315,7 @@ export class FileBrowserModel implements IDisposable {
    */
   async download(path: string): Promise<void> {
     const url = await this.manager.services.contents.getDownloadUrl(path);
-    const element = document.createElement('a');
+    let element = document.createElement('a');
     element.href = url;
     element.download = '';
     document.body.appendChild(element);
@@ -405,11 +395,9 @@ export class FileBrowserModel implements IDisposable {
     const largeFile = file.size > LARGE_FILE_SIZE;
 
     if (largeFile && !supportsChunked) {
-      const msg = this._trans.__(
-        'Cannot upload file (>%1 MB). %2',
-        LARGE_FILE_SIZE / (1024 * 1024),
+      let msg = `Cannot upload file (>${LARGE_FILE_SIZE / (1024 * 1024)} MB). ${
         file.name
-      );
+      }`;
       console.warn(msg);
       throw msg;
     }
@@ -434,15 +422,11 @@ export class FileBrowserModel implements IDisposable {
 
   private async _shouldUploadLarge(file: File): Promise<boolean> {
     const { button } = await showDialog({
-      title: this._trans.__('Large file size warning'),
-      body: this._trans.__(
-        'The file size is %1 MB. Do you still want to upload it?',
-        Math.round(file.size / (1024 * 1024))
-      ),
-      buttons: [
-        Dialog.cancelButton({ label: this._trans.__('Cancel') }),
-        Dialog.warnButton({ label: this._trans.__('Upload') })
-      ]
+      title: 'Large file size warning',
+      body: `The file size is ${Math.round(
+        file.size / (1024 * 1024)
+      )} MB. Do you still want to upload it?`,
+      buttons: [Dialog.cancelButton(), Dialog.warnButton({ label: 'Upload' })]
     });
     return button.accept;
   }
@@ -457,16 +441,16 @@ export class FileBrowserModel implements IDisposable {
     // Gather the file model parameters.
     let path = this._model.path;
     path = path ? path + '/' + file.name : file.name;
-    const name = file.name;
-    const type: Contents.ContentType = 'file';
-    const format: Contents.FileFormat = 'base64';
+    let name = file.name;
+    let type: Contents.ContentType = 'file';
+    let format: Contents.FileFormat = 'base64';
 
     const uploadInner = async (
       blob: Blob,
       chunk?: number
     ): Promise<Contents.IModel> => {
       await this._uploadCheckDisposed();
-      const reader = new FileReader();
+      let reader = new FileReader();
       reader.readAsDataURL(blob);
       await new Promise((resolve, reject) => {
         reader.onload = resolve;
@@ -478,7 +462,7 @@ export class FileBrowserModel implements IDisposable {
       // remove header https://stackoverflow.com/a/24289420/907060
       const content = (reader.result as string).split(',')[1];
 
-      const model: Partial<Contents.IModel> = {
+      let model: Partial<Contents.IModel> = {
         type,
         format,
         name,
@@ -603,10 +587,10 @@ export class FileBrowserModel implements IDisposable {
     sender: Contents.IManager,
     change: Contents.IChangedArgs
   ): void {
-    const path = this._model.path;
-    const { sessions } = this.manager.services;
-    const { oldValue, newValue } = change;
-    const value =
+    let path = this._model.path;
+    let { sessions } = this.manager.services;
+    let { oldValue, newValue } = change;
+    let value =
       oldValue && oldValue.path && PathExt.dirname(oldValue.path) === path
         ? oldValue
         : newValue && newValue.path && PathExt.dirname(newValue.path) === path
@@ -634,8 +618,6 @@ export class FileBrowserModel implements IDisposable {
     });
   }
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _connectionFailure = new Signal<this, Error>(this);
   private _fileChanged = new Signal<this, Contents.IChangedArgs>(this);
   private _items: Contents.IModel[] = [];
@@ -695,11 +677,6 @@ export namespace FileBrowserModel {
      * folder was last opened when it is restored.
      */
     state?: IStateDB;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -709,7 +686,7 @@ export namespace FileBrowserModel {
 export class FilterFileBrowserModel extends FileBrowserModel {
   constructor(options: FilterFileBrowserModel.IOptions) {
     super(options);
-    this.translator = options.translator || nullTranslator;
+
     this._filter = options.filter ? options.filter : model => true;
   }
 
@@ -728,11 +705,6 @@ export class FilterFileBrowserModel extends FileBrowserModel {
     });
   }
 
-  setFilter(filter: (value: Contents.IModel) => boolean) {
-    this._filter = filter;
-    void this.refresh();
-  }
-
   private _filter: (value: Contents.IModel) => boolean;
 }
 
@@ -748,5 +720,24 @@ export namespace FilterFileBrowserModel {
      * Filter function on file browser item model
      */
     filter?: (value: Contents.IModel) => boolean;
+  }
+}
+
+/**
+ * The namespace for the file browser model private data.
+ */
+namespace Private {
+  /**
+   * Normalize a path based on a root directory, accounting for relative paths.
+   */
+  export function normalizePath(
+    contents: Contents.IManager,
+    root: string,
+    path: string
+  ): string {
+    const driveName = contents.driveName(root);
+    const localPath = contents.localPath(root);
+    const resolved = PathExt.resolve(localPath, path);
+    return driveName ? `${driveName}:${resolved}` : resolved;
   }
 }

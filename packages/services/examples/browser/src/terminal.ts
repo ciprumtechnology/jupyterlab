@@ -10,9 +10,9 @@ export async function main() {
 
   // See if terminals are available
   if (Terminal.isAvailable()) {
-    const manager = new TerminalManager();
+    let manager = new TerminalManager();
     // Create a named terminal session and send some data.
-    const session = await manager.startNew();
+    let session = await manager.startNew();
     session.send({ type: 'stdin', content: ['foo'] });
   }
 }

@@ -25,9 +25,6 @@
       "path": "../services"
     },
     {
-      "path": "../translation"
-    },
-    {
       "path": "../ui-components"
     }
   ]

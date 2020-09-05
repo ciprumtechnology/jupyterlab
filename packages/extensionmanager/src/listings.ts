@@ -7,7 +7,7 @@ import { URLExt } from '@jupyterlab/coreutils';
 
 import { ServerConnection } from '@jupyterlab/services';
 
-/** *
+/***
  * Information about a listed entry.
  */
 export interface IListEntry {
@@ -33,16 +33,16 @@ export interface IListEntry {
  *
  */
 export type ListResult = null | {
-  mode: 'block' | 'allow' | 'default' | 'invalid';
+  mode: 'white' | 'black' | 'default' | 'invalid';
   uris: string[];
   entries: IListEntry[];
 };
 
 export interface IListingApi {
-  blocked_extensions_uris: string[];
-  allowed_extensions_uris: string[];
-  blocked_extensions: IListEntry[];
-  allowed_extensions: IListEntry[];
+  blacklist_uris: string[];
+  whitelist_uris: string[];
+  blacklist: IListEntry[];
+  whitelist: IListEntry[];
 }
 
 /**
@@ -62,10 +62,7 @@ export class Lister {
           uris: [],
           entries: []
         };
-        if (
-          data.blocked_extensions_uris.length > 0 &&
-          data.allowed_extensions_uris.length > 0
-        ) {
+        if (data.blacklist_uris.length > 0 && data.whitelist_uris.length > 0) {
           console.warn('Simultaneous black and white list are not allowed.');
           this._listings = {
             mode: 'invalid',
@@ -73,19 +70,17 @@ export class Lister {
             entries: []
           };
         } else if (
-          data.blocked_extensions_uris.length > 0 ||
-          data.allowed_extensions_uris.length > 0
+          data.blacklist_uris.length > 0 ||
+          data.whitelist_uris.length > 0
         ) {
           this._listings = {
-            mode: data.blocked_extensions_uris.length > 0 ? 'block' : 'allow',
+            mode: data.blacklist_uris.length > 0 ? 'black' : 'white',
             uris:
-              data.blocked_extensions_uris.length > 0
-                ? data.blocked_extensions_uris
-                : data.allowed_extensions_uris,
+              data.blacklist_uris.length > 0
+                ? data.blacklist_uris
+                : data.whitelist_uris,
             entries:
-              data.blocked_extensions_uris.length > 0
-                ? data.blocked_extensions
-                : data.allowed_extensions
+              data.blacklist_uris.length > 0 ? data.blacklist : data.whitelist
           };
         }
         this._listingsLoaded.emit(this._listings);

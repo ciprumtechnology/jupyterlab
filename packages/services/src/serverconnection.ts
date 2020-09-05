@@ -6,7 +6,7 @@ import { PageConfig, URLExt } from '@jupyterlab/coreutils';
 /**
  * Handle the default `fetch` and `WebSocket` providers.
  */
-declare let global: any;
+declare var global: any;
 
 let FETCH: (input: RequestInfo, init?: RequestInit) => Promise<Response>;
 let HEADERS: typeof Headers;
@@ -17,7 +17,7 @@ if (typeof window === 'undefined') {
   // Mangle the require statements so it does not get picked up in the
   // browser assets.
   /* tslint:disable */
-  const fetchMod = require('node-fetch');
+  let fetchMod = require('node-fetch');
   FETCH = global.fetch ?? fetchMod;
   REQUEST = global.Request ?? fetchMod.Request;
   HEADERS = global.Headers ?? fetchMod.Headers;
@@ -144,51 +144,20 @@ export namespace ServerConnection {
    */
   export class ResponseError extends Error {
     /**
-     * Create a ResponseError from a response, handling the traceback and message
-     * as appropriate.
-     *
-     * @param response The response object.
-     *
-     * @returns A promise that resolves with a `ResponseError` object.
-     */
-    static async create(response: Response): Promise<ResponseError> {
-      try {
-        const data = await response.json();
-        if (data['traceback']) {
-          console.error(data['traceback']);
-        }
-        if (data['message']) {
-          return new ResponseError(response, data['message']);
-        }
-        return new ResponseError(response);
-      } catch (e) {
-        console.debug(e);
-        return new ResponseError(response);
-      }
-    }
-
-    /**
      * Create a new response error.
      */
     constructor(
       response: Response,
-      message = `Invalid response: ${response.status} ${response.statusText}`,
-      traceback = ''
+      message = `Invalid response: ${response.status} ${response.statusText}`
     ) {
       super(message);
       this.response = response;
-      this.traceback = traceback;
     }
 
     /**
      * The response associated with the error.
      */
     response: Response;
-
-    /**
-     * The traceback associated with the error.
-     */
-    traceback: string;
   }
 
   /**
@@ -203,6 +172,21 @@ export namespace ServerConnection {
       this.stack = original.stack;
     }
   }
+
+  /**
+   * The default settings.
+   */
+  export const defaultSettings: ServerConnection.ISettings = {
+    baseUrl: PageConfig.getBaseUrl(),
+    appUrl: PageConfig.getOption('appUrl'),
+    wsUrl: PageConfig.getWsUrl(),
+    token: PageConfig.getToken(),
+    init: { cache: 'no-store', credentials: 'same-origin' },
+    fetch: FETCH,
+    Headers: HEADERS,
+    Request: REQUEST,
+    WebSocket: WEBSOCKET
+  };
 }
 
 /**
@@ -215,32 +199,24 @@ namespace Private {
   export function makeSettings(
     options: Partial<ServerConnection.ISettings> = {}
   ): ServerConnection.ISettings {
-    const pageBaseUrl = PageConfig.getBaseUrl();
-    const pageWsUrl = PageConfig.getWsUrl();
-    const baseUrl = URLExt.normalize(options.baseUrl) || pageBaseUrl;
+    const defaultSettings = ServerConnection.defaultSettings;
+    const baseUrl =
+      URLExt.normalize(options.baseUrl) || defaultSettings.baseUrl;
     let wsUrl = options.wsUrl;
     // Prefer the default wsUrl if we are using the default baseUrl.
-    if (!wsUrl && baseUrl === pageBaseUrl) {
-      wsUrl = pageWsUrl;
+    if (!wsUrl && baseUrl === defaultSettings.baseUrl) {
+      wsUrl = defaultSettings.wsUrl;
     }
     // Otherwise convert the baseUrl to a wsUrl if possible.
     if (!wsUrl && baseUrl.indexOf('http') === 0) {
       wsUrl = 'ws' + baseUrl.slice(4);
     }
     // Otherwise fall back on the default wsUrl.
-    wsUrl = wsUrl ?? pageWsUrl;
-
+    wsUrl = wsUrl ?? defaultSettings.wsUrl;
     return {
-      init: { cache: 'no-store', credentials: 'same-origin' },
-      fetch: FETCH,
-      Headers: HEADERS,
-      Request: REQUEST,
-      WebSocket: WEBSOCKET,
-      token: PageConfig.getToken(),
-      appUrl: PageConfig.getOption('appUrl'),
+      ...defaultSettings,
       ...options,
-      baseUrl,
-      wsUrl
+      ...{ wsUrl }
     };
   }
 
@@ -294,7 +270,7 @@ namespace Private {
 
     // Set the content type if there is no given data and we are
     // using an authenticated connection.
-    if (!request.headers.has('Content-Type') && authenticated) {
+    if (!request.bodyUsed && authenticated) {
       request.headers.set('Content-Type', 'application/json');
     }
 

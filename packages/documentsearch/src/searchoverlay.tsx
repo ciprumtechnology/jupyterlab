@@ -21,11 +21,6 @@ import * as React from 'react';
 
 import { IDisplayState } from './interfaces';
 import { SearchInstance } from './searchinstance';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 
 const OVERLAY_CLASS = 'jp-DocumentSearch-overlay';
 const OVERLAY_ROW_CLASS = 'jp-DocumentSearch-overlay-row';
@@ -67,7 +62,6 @@ interface ISearchEntryProps {
   useRegex: boolean;
   searchText: string;
   forceFocus: boolean;
-  translator?: ITranslator;
 }
 
 interface IReplaceEntryProps {
@@ -76,15 +70,11 @@ interface IReplaceEntryProps {
   onReplaceKeydown: Function;
   onChange: Function;
   replaceText: string;
-  translator?: ITranslator;
 }
 
 class SearchEntry extends React.Component<ISearchEntryProps> {
   constructor(props: ISearchEntryProps) {
     super(props);
-    this.translator = props.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
-    this.searchInputRef = React.createRef();
   }
 
   /**
@@ -95,7 +85,7 @@ class SearchEntry extends React.Component<ISearchEntryProps> {
     // This makes typing in the box starts a new query (the common case),
     // while arrow keys can be used to move cursor in preparation for
     // modifying previous query.
-    this.searchInputRef.current?.select();
+    (this.refs.searchInputNode as HTMLInputElement).select();
   }
 
   componentDidUpdate() {
@@ -121,9 +111,7 @@ class SearchEntry extends React.Component<ISearchEntryProps> {
     return (
       <div className={wrapperClass}>
         <input
-          placeholder={
-            this.props.searchText ? undefined : this._trans.__('Find')
-          }
+          placeholder={this.props.searchText ? undefined : 'Find'}
           className={INPUT_CLASS}
           value={this.props.searchText}
           onChange={e => this.props.onChange(e)}
@@ -131,7 +119,7 @@ class SearchEntry extends React.Component<ISearchEntryProps> {
           tabIndex={2}
           onFocus={e => this.props.onInputFocus()}
           onBlur={e => this.props.onInputBlur()}
-          ref={this.searchInputRef}
+          ref="searchInputNode"
         />
         <button
           className={BUTTON_WRAPPER_CLASS}
@@ -153,32 +141,24 @@ class SearchEntry extends React.Component<ISearchEntryProps> {
       </div>
     );
   }
-
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
-  private searchInputRef: React.RefObject<HTMLInputElement>;
 }
 
 class ReplaceEntry extends React.Component<IReplaceEntryProps> {
   constructor(props: any) {
     super(props);
-    this._trans = (props.translator || nullTranslator).load('jupyterlab');
-    this.replaceInputRef = React.createRef();
   }
 
   render() {
     return (
       <div className={REPLACE_WRAPPER_CLASS}>
         <input
-          placeholder={
-            this.props.replaceText ? undefined : this._trans.__('Replace')
-          }
+          placeholder={this.props.replaceText ? undefined : 'Replace'}
           className={REPLACE_ENTRY_CLASS}
           value={this.props.replaceText}
           onKeyDown={e => this.props.onReplaceKeydown(e)}
           onChange={e => this.props.onChange(e)}
           tabIndex={3}
-          ref={this.replaceInputRef}
+          ref="replaceInputNode"
         />
         <button
           className={REPLACE_BUTTON_WRAPPER_CLASS}
@@ -189,7 +169,7 @@ class ReplaceEntry extends React.Component<IReplaceEntryProps> {
             className={`${REPLACE_BUTTON_CLASS} ${BUTTON_CONTENT_CLASS}`}
             tabIndex={-1}
           >
-            {this._trans.__('Replace')}
+            Replace
           </span>
         </button>
         <button
@@ -201,15 +181,12 @@ class ReplaceEntry extends React.Component<IReplaceEntryProps> {
             className={`${REPLACE_BUTTON_CLASS} ${BUTTON_CONTENT_CLASS}`}
             tabIndex={-1}
           >
-            {this._trans.__('Replace All')}
+            Replace All
           </span>
         </button>
       </div>
     );
   }
-
-  private replaceInputRef: React.RefObject<HTMLInputElement>;
-  private _trans: TranslationBundle;
 }
 
 interface IUpDownProps {
@@ -338,7 +315,6 @@ interface ISearchOverlayProps {
   onReplaceAll: Function;
   isReadOnly: boolean;
   hasOutputs: boolean;
-  translator?: ITranslator;
 }
 
 class SearchOverlay extends React.Component<
@@ -347,9 +323,8 @@ class SearchOverlay extends React.Component<
 > {
   constructor(props: ISearchOverlayProps) {
     super(props);
-    this.translator = props.translator || nullTranslator;
     this.state = props.overlayState;
-    this.replaceEntryRef = React.createRef();
+
     this._toggleSearchOutput = this._toggleSearchOutput.bind(this);
   }
 
@@ -484,7 +459,6 @@ class SearchOverlay extends React.Component<
     ) : null;
     const icon = this.state.replaceEntryShown ? caretDownIcon : caretRightIcon;
 
-    // TODO: Error messages from regex are not currently localizable.
     return [
       <div className={OVERLAY_ROW_CLASS} key={0}>
         {this.props.isReadOnly ? (
@@ -522,7 +496,6 @@ class SearchOverlay extends React.Component<
           inputFocused={this.state.searchInputFocused}
           searchText={this.state.searchText}
           forceFocus={this.props.overlayState.forceFocus}
-          translator={this.translator}
         />
         <SearchIndices
           currentIndex={this.props.overlayState.currentIndex}
@@ -559,8 +532,7 @@ class SearchOverlay extends React.Component<
                 this.props.onReplaceAll(this.state.replaceText)
               }
               replaceText={this.state.replaceText}
-              ref={this.replaceEntryRef}
-              translator={this.translator}
+              ref="replaceEntry"
             />
             <div className={SPACER_CLASS}></div>
             {filterToggle}
@@ -579,9 +551,6 @@ class SearchOverlay extends React.Component<
       </div>
     ];
   }
-
-  protected translator: ITranslator;
-  private replaceEntryRef: React.RefObject<ReplaceEntry>;
 
   private _debouncedStartSearch = new Debouncer(() => {
     this._executeSearch(true, this.state.searchText);
@@ -603,8 +572,7 @@ export function createSearchOverlay(
     onReplaceAll,
     onEndSearch,
     isReadOnly,
-    hasOutputs,
-    translator
+    hasOutputs
   } = options;
   const widget = ReactWidget.create(
     <UseSignal signal={widgetChanged} initialArgs={overlayState}>
@@ -622,7 +590,6 @@ export function createSearchOverlay(
             overlayState={args!}
             isReadOnly={isReadOnly}
             hasOutputs={hasOutputs}
-            translator={translator}
           />
         );
       }}
@@ -646,7 +613,6 @@ namespace createSearchOverlay {
     onReplaceAll: Function;
     isReadOnly: boolean;
     hasOutputs: boolean;
-    translator?: ITranslator;
   }
 }
 

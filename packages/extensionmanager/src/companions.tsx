@@ -6,7 +6,6 @@ import { Dialog, showDialog } from '@jupyterlab/apputils';
 import * as React from 'react';
 
 import { KernelSpec } from '@jupyterlab/services';
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 
 /**
  * An object representing a companion installation info.
@@ -104,7 +103,7 @@ const managerCommand: { [key: string]: (name: string) => string } = {
 };
 
 function getInstallCommands(info: IInstallInfo) {
-  const commands = Array<string>();
+  let commands = Array<string>();
   for (const manager of info.managers) {
     const name = info.overrides?.[manager]?.name ?? info.base.name;
     if (!name) {
@@ -127,21 +126,18 @@ function getInstallCommands(info: IInstallInfo) {
  */
 export function presentCompanions(
   kernelCompanions: KernelCompanion[],
-  serverCompanion: IInstallInfo | undefined,
-  translator?: ITranslator
+  serverCompanion: IInstallInfo | undefined
 ): Promise<boolean> {
-  translator = translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
-  const entries = [];
+  let entries = [];
   if (serverCompanion) {
     entries.push(
       <p key="server-companion">
-        {trans.__(`This package has indicated that it needs a corresponding server
-extension. Please contact your Administrator to update the server with
-one of the following commands:`)}
+        This package has indicated that it needs a corresponding server
+        extension. Please contact your Administrator to update the server with
+        one of the following commands:
         {getInstallCommands(serverCompanion).map(command => {
           return (
-            <p key={command}>
+            <p>
               <code>{command}</code>
             </p>
           );
@@ -152,22 +148,20 @@ one of the following commands:`)}
   if (kernelCompanions.length > 0) {
     entries.push(
       <p key={'kernel-companion'}>
-        {trans.__(
-          'This package has indicated that it needs a corresponding package for the kernel.'
-        )}
+        This package has indicated that it needs a corresponding package for the
+        kernel.
       </p>
     );
-    for (const [index, entry] of kernelCompanions.entries()) {
+    for (let [index, entry] of kernelCompanions.entries()) {
       entries.push(
         <p key={`companion-${index}`}>
-          {trans.__(
-            `The package <code>%1</code>, is required by the following kernels:`,
-            entry.kernelInfo.base.name!
-          )}
+          The package
+          <code>{entry.kernelInfo.base.name!}</code>, is required by the
+          following kernels:
         </p>
       );
-      const kernelEntries = [];
-      for (const [index, kernel] of entry.kernels.entries()) {
+      let kernelEntries = [];
+      for (let [index, kernel] of entry.kernels.entries()) {
         kernelEntries.push(
           <li key={`kernels-${index}`}>
             <code>{kernel.display_name}</code>
@@ -177,12 +171,12 @@ one of the following commands:`)}
       entries.push(<ul key={'kernel-companion-end'}>{kernelEntries}</ul>);
       entries.push(
         <p key={`kernel-companion-${index}`}>
-          {trans.__(`This package has indicated that it needs a corresponding kernel
-package. Please contact your Administrator to update the server with
-one of the following commands:`)}
+          This package has indicated that it needs a corresponding kernel
+          package. Please contact your Administrator to update the server with
+          one of the following commands:
           {getInstallCommands(entry.kernelInfo).map(command => {
             return (
-              <p key={command}>
+              <p>
                 <code>{command}</code>
               </p>
             );
@@ -191,13 +185,13 @@ one of the following commands:`)}
       );
     }
   }
-  const body = (
+  let body = (
     <div>
       {entries}
       <p>
-        {trans.__(`You should make sure that the indicated packages are installed before
-trying to use the extension. Do you want to continue with the extension
-installation?`)}
+        You should make sure that the indicated packages are installed before
+        trying to use the extension. Do you want to continue with the extension
+        installation?
       </p>
     </div>
   );
@@ -205,20 +199,20 @@ installation?`)}
   const hasServerCompanion = !!serverCompanion;
   let title = '';
   if (hasKernelCompanions && hasServerCompanion) {
-    title = trans.__('Kernel and Server Companions');
+    title = 'Kernel and Server Companions';
   } else if (hasKernelCompanions) {
-    title = trans.__('Kernel Companions');
+    title = 'Kernel Companions';
   } else {
-    title = trans.__('Server Companion');
+    title = 'Server Companion';
   }
   return showDialog({
     title,
     body,
     buttons: [
-      Dialog.cancelButton({ label: trans.__('Cancel') }),
+      Dialog.cancelButton(),
       Dialog.okButton({
-        label: trans.__('OK'),
-        caption: trans.__('Install the JupyterLab extension.')
+        label: 'OK',
+        caption: 'Install the JupyterLab extension.'
       })
     ]
   }).then(result => {

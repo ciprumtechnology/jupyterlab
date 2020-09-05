@@ -13,11 +13,6 @@ import { ArrayExt } from '@lumino/algorithm';
 import { IUploadModel, FileBrowserModel, FileBrowser } from '.';
 
 import React from 'react';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 
 /**
  * Half-spacing between items in the overall status item.
@@ -34,11 +29,9 @@ const HALF_SPACING = 4;
 function FileUploadComponent(
   props: FileUploadComponent.IProps
 ): React.ReactElement<FileUploadComponent.IProps> {
-  const translator = props.translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
   return (
     <GroupItem spacing={HALF_SPACING}>
-      <TextItem source={trans.__('Uploading…')} />
+      <TextItem source={'Uploading…'} />
       <ProgressBar percentage={props.upload} />
     </GroupItem>
   );
@@ -56,11 +49,6 @@ namespace FileUploadComponent {
      * The current upload percentage, from 0 to 100.
      */
     upload: number;
-
-    /**
-     * The language translator.
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -82,8 +70,6 @@ export class FileUploadStatus extends VDomRenderer<FileUploadStatus.Model> {
         opts.tracker.currentWidget && opts.tracker.currentWidget.model
       )
     );
-    this.translator = opts.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
     this._tracker = opts.tracker;
     this._tracker.currentChanged.connect(this._onBrowserChange);
   }
@@ -97,17 +83,12 @@ export class FileUploadStatus extends VDomRenderer<FileUploadStatus.Model> {
       const item = this.model!.items[0];
 
       if (item.complete) {
-        return <TextItem source={this._trans.__('Complete!')} />;
+        return <TextItem source="Complete!" />;
       } else {
-        return (
-          <FileUploadComponent
-            upload={this.model!.items[0].progress}
-            translator={this.translator}
-          />
-        );
+        return <FileUploadComponent upload={this.model!.items[0].progress} />;
       }
     } else {
-      return <FileUploadComponent upload={100} translator={this.translator} />;
+      return <FileUploadComponent upload={100} />;
     }
   }
 
@@ -127,8 +108,6 @@ export class FileUploadStatus extends VDomRenderer<FileUploadStatus.Model> {
     }
   };
 
-  private readonly translator: ITranslator;
-  private _trans: TranslationBundle;
   private _tracker: WidgetTracker<FileBrowser>;
 }
 
@@ -233,11 +212,6 @@ export namespace FileUploadStatus {
      * The application file browser tracker.
      */
     readonly tracker: WidgetTracker<FileBrowser>;
-
-    /**
-     * The translation language bundle.
-     */
-    readonly translator?: ITranslator;
   }
 }
 

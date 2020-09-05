@@ -3,7 +3,7 @@
 
 import { ISessionContext, sessionContextDialogs } from '@jupyterlab/apputils';
 
-import { PathExt, PageConfig } from '@jupyterlab/coreutils';
+import { PathExt } from '@jupyterlab/coreutils';
 
 import { UUID } from '@lumino/coreutils';
 
@@ -14,8 +14,6 @@ import {
 } from '@jupyterlab/docregistry';
 
 import { Contents, Kernel, ServiceManager } from '@jupyterlab/services';
-
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 
 import { ArrayExt, find } from '@lumino/algorithm';
 
@@ -48,7 +46,6 @@ export class DocumentManager implements IDocumentManager {
    * Construct a new document manager.
    */
   constructor(options: DocumentManager.IOptions) {
-    this.translator = options.translator || nullTranslator;
     this.registry = options.registry;
     this.services = options.manager;
     this._dialogs = options.sessionDialogs || sessionContextDialogs;
@@ -56,10 +53,7 @@ export class DocumentManager implements IDocumentManager {
     this._opener = options.opener;
     this._when = options.when || options.manager.ready;
 
-    const widgetManager = new DocumentWidgetManager({
-      registry: this.registry,
-      translator: this.translator
-    });
+    let widgetManager = new DocumentWidgetManager({ registry: this.registry });
     widgetManager.activateRequested.connect(this._onActivateRequested, this);
     this._widgetManager = widgetManager;
     this._setBusy = options.setBusy;
@@ -80,22 +74,6 @@ export class DocumentManager implements IDocumentManager {
    */
   get activateRequested(): ISignal<this, string> {
     return this._activateRequested;
-  }
-
-  /**
-   * The document mode of the document manager, either 'single-document' or 'multiple-document'.
-   *
-   * This is usually synced with the `mode` attribute of the shell.
-   */
-  get mode(): string {
-    return this._mode;
-  }
-
-  /**
-   * Set the mode of the document manager, either 'single-document' or 'multiple-document'.
-   */
-  set mode(value: string) {
-    this._mode = value;
   }
 
   /**
@@ -301,10 +279,10 @@ export class DocumentManager implements IDocumentManager {
     path: string,
     widgetName: string | null = 'default'
   ): IDocumentWidget | undefined {
-    const newPath = PathExt.normalize(path);
+    let newPath = PathExt.normalize(path);
     let widgetNames = [widgetName];
     if (widgetName === 'default') {
-      const factory = this.registry.defaultWidgetFactory(newPath);
+      let factory = this.registry.defaultWidgetFactory(newPath);
       if (!factory) {
         return undefined;
       }
@@ -315,10 +293,10 @@ export class DocumentManager implements IDocumentManager {
         .map(f => f.name);
     }
 
-    for (const context of this._contextsForPath(newPath)) {
+    for (let context of this._contextsForPath(newPath)) {
       for (const widgetName of widgetNames) {
         if (widgetName !== null) {
-          const widget = this._widgetManager.findWidget(context, widgetName);
+          let widget = this._widgetManager.findWidget(context, widgetName);
           if (widget) {
             return widget;
           }
@@ -392,16 +370,12 @@ export class DocumentManager implements IDocumentManager {
     kernel?: Partial<Kernel.IModel>,
     options?: DocumentRegistry.IOpenOptions
   ): IDocumentWidget | undefined {
-    if (this.mode == 'single-document' && options?.maybeNewWorkspace) {
-      this._openInNewWorkspace(path);
-    } else {
-      const widget = this.findWidget(path, widgetName);
-      if (widget) {
-        this._opener.open(widget, options || {});
-        return widget;
-      }
-      return this.open(path, widgetName, kernel, options || {});
+    let widget = this.findWidget(path, widgetName);
+    if (widget) {
+      this._opener.open(widget, options || {});
+      return widget;
     }
+    return this.open(path, widgetName, kernel, options || {});
   }
 
   /**
@@ -484,16 +458,16 @@ export class DocumentManager implements IDocumentManager {
     // widgets that have different models.
 
     // Allow options to be passed when adding a sibling.
-    const adopter = (
+    let adopter = (
       widget: IDocumentWidget,
       options?: DocumentRegistry.IOpenOptions
     ) => {
       this._widgetManager.adoptWidget(context, widget);
       this._opener.open(widget, options);
     };
-    const modelDBFactory =
+    let modelDBFactory =
       this.services.contents.getModelDBFactory(path) || undefined;
-    const context = new Context({
+    let context = new Context({
       opener: adopter,
       manager: this.services,
       factory,
@@ -503,7 +477,7 @@ export class DocumentManager implements IDocumentManager {
       setBusy: this._setBusy,
       sessionDialogs: this._dialogs
     });
-    const handler = new SaveHandler({
+    let handler = new SaveHandler({
       context,
       saveInterval: this.autosaveInterval
     });
@@ -532,24 +506,15 @@ export class DocumentManager implements IDocumentManager {
     path: string,
     widgetName: string
   ): DocumentRegistry.WidgetFactory | undefined {
-    const { registry } = this;
+    let { registry } = this;
     if (widgetName === 'default') {
-      const factory = registry.defaultWidgetFactory(path);
+      let factory = registry.defaultWidgetFactory(path);
       if (!factory) {
         return undefined;
       }
       widgetName = factory.name;
     }
     return registry.getWidgetFactory(widgetName);
-  }
-
-  private _openInNewWorkspace(path: string) {
-    const newUrl = PageConfig.getUrl({
-      mode: this.mode,
-      workspace: 'default',
-      treePath: path
-    });
-    window.open(newUrl);
   }
 
   /**
@@ -567,18 +532,18 @@ export class DocumentManager implements IDocumentManager {
     kernel?: Partial<Kernel.IModel>,
     options?: DocumentRegistry.IOpenOptions
   ): IDocumentWidget | undefined {
-    const widgetFactory = this._widgetFactoryFor(path, widgetName);
+    let widgetFactory = this._widgetFactoryFor(path, widgetName);
     if (!widgetFactory) {
       return undefined;
     }
-    const modelName = widgetFactory.modelName || 'text';
-    const factory = this.registry.getModelFactory(modelName);
+    let modelName = widgetFactory.modelName || 'text';
+    let factory = this.registry.getModelFactory(modelName);
     if (!factory) {
       return undefined;
     }
 
     // Handle the kernel pereference.
-    const preference = this.registry.getKernelPreference(
+    let preference = this.registry.getKernelPreference(
       path,
       widgetFactory.name,
       kernel
@@ -605,7 +570,7 @@ export class DocumentManager implements IDocumentManager {
       throw new Error(`Invalid argument 'which': ${which}`);
     }
 
-    const widget = this._widgetManager.createWidget(widgetFactory, context);
+    let widget = this._widgetManager.createWidget(widgetFactory, context);
     this._opener.open(widget, options || {});
 
     // If the initial opening of the context fails, dispose of the widget.
@@ -626,7 +591,6 @@ export class DocumentManager implements IDocumentManager {
     this._activateRequested.emit(args);
   }
 
-  protected translator: ITranslator;
   private _activateRequested = new Signal<this, string>(this);
   private _contexts: Private.IContext[] = [];
   private _opener: DocumentManager.IWidgetOpener;
@@ -634,7 +598,6 @@ export class DocumentManager implements IDocumentManager {
   private _isDisposed = false;
   private _autosave = true;
   private _autosaveInterval = 120;
-  private _mode = '';
   private _when: Promise<void>;
   private _setBusy: (() => IDisposable) | undefined;
   private _dialogs: ISessionContext.IDialogs;
@@ -677,11 +640,6 @@ export namespace DocumentManager {
      * The provider for session dialogs.
      */
     sessionDialogs?: ISessionContext.IDialogs;
-
-    /**
-     * The applicaton language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**

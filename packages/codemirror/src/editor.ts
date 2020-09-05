@@ -1,7 +1,7 @@
 // Copyright (c) Jupyter Development Team.
 // Distributed under the terms of the Modified BSD License.
-// / <reference types="codemirror"/>
-// / <reference types="codemirror/searchcursor"/>
+/// <reference types="codemirror"/>
+/// <reference types="codemirror/searchcursor"/>
 
 import CodeMirror from 'codemirror';
 
@@ -14,12 +14,6 @@ import {
   IObservableString,
   ICollaborator
 } from '@jupyterlab/observables';
-
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 
 import { ArrayExt } from '@lumino/algorithm';
 
@@ -55,11 +49,6 @@ import 'codemirror/keymap/emacs.js';
 import 'codemirror/keymap/sublime.js';
 // import 'codemirror/keymap/vim.js';  lazy loading of vim mode is available in ../codemirror-extension/index.ts
 
-// @ts-expect-error
-import shadowCss from '!!to-string-loader!css-loader!../style/shadow.css';
-// @ts-expect-error
-import jupyterThemeCSS from '!!to-string-loader!css-loader!../style/jupyter-theme.css';
-
 /**
  * The class name added to CodeMirrorWidget instances.
  */
@@ -79,11 +68,6 @@ const COLLABORATOR_CURSOR_CLASS = 'jp-CollaboratorCursor';
  * The class name for the hover box for collaborator cursors.
  */
 const COLLABORATOR_HOVER_CLASS = 'jp-CollaboratorCursor-hover';
-
-/**
- * The id of the style element containing CodeMirror theme CSS.
- */
-const CODEMIRROR_THEME_STYLE_ID = 'jp-CodeMirror-theme';
 
 /**
  * The key code for the up arrow key.
@@ -108,23 +92,7 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
    * Construct a CodeMirror editor.
    */
   constructor(options: CodeMirrorEditor.IOptions) {
-    const host = (this.host = options.host);
-    this.translator = options.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
-
-    // Attach shadow root to host if host does not have already it.
-    const shadowRoot = host.shadowRoot || host.attachShadow({ mode: 'open' });
-
-    // Add a style element with the CodeMirror core CSS to the shadow root.
-    const shadowStyleEl = document.createElement('style');
-    shadowStyleEl.textContent = shadowCss;
-    shadowRoot.appendChild(shadowStyleEl);
-    // Add CodeMirror theme stylesheet.
-    const themeStyleEl = document.createElement('style');
-    themeStyleEl.id = CODEMIRROR_THEME_STYLE_ID;
-    themeStyleEl.textContent = jupyterThemeCSS;
-    shadowRoot.appendChild(themeStyleEl);
-
+    let host = (this.host = options.host);
     host.classList.add(EDITOR_CLASS);
     host.classList.add('jp-Editor');
     host.addEventListener('focus', this, true);
@@ -134,24 +102,21 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
     this._uuid = options.uuid || UUID.uuid4();
 
     // Handle selection style.
-    const style = options.selectionStyle || {};
+    let style = options.selectionStyle || {};
     this._selectionStyle = {
       ...CodeEditor.defaultSelectionStyle,
       ...(style as CodeEditor.ISelectionStyle)
     };
 
-    const model = (this._model = options.model);
-    const config = options.config || {};
-    const fullConfig = (this._config = {
+    let model = (this._model = options.model);
+    let config = options.config || {};
+    let fullConfig = (this._config = {
       ...CodeMirrorEditor.defaultConfig,
       ...config
     });
-    const editor = (this._editor = Private.createEditor(
-      shadowRoot,
-      fullConfig
-    ));
+    let editor = (this._editor = Private.createEditor(host, fullConfig));
 
-    const doc = editor.getDoc();
+    let doc = editor.getDoc();
 
     // Handle initial values for text, mimetype, and selections.
     doc.setValue(model.value.text);
@@ -175,7 +140,7 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
     model.selections.changed.connect(this._onSelectionsChanged, this);
 
     CodeMirror.on(editor, 'keydown', (editor: CodeMirror.Editor, event) => {
-      const index = ArrayExt.findFirstIndex(this._keydownHandlers, handler => {
+      let index = ArrayExt.findFirstIndex(this._keydownHandlers, handler => {
         if (handler(this, event) === true) {
           event.preventDefault();
           return true;
@@ -196,15 +161,6 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
         this.refresh();
       }
       this._lastChange = change;
-    });
-
-    // Turn off paste handling in codemirror since sometimes we want to
-    // replace it with our own.
-    editor.on('paste', (instance: CodeMirror.Editor, event: any) => {
-      const handlePaste = this._config['handlePaste'] ?? true;
-      if (!handlePaste) {
-        event.codemirrorIgnore = true;
-      }
     });
 
     // Manually refresh on paste to make sure editor is properly sized.
@@ -329,13 +285,7 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
     // Don't bother setting the option if it is already the same.
     if (this._config[option] !== value) {
       this._config[option] = value;
-      Private.setOption(
-        this.editor,
-        this.host.shadowRoot!,
-        option,
-        value,
-        this._config
-      );
+      Private.setOption(this.editor, option, value, this._config);
     }
   }
 
@@ -396,7 +346,7 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
    * Test whether the editor has keyboard focus.
    */
   hasFocus(): boolean {
-    return this.host === document.activeElement;
+    return this._editor.getWrapperElement().contains(document.activeElement);
   }
 
   /**
@@ -679,8 +629,8 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
    * Handle keydown events from the editor.
    */
   protected onKeydown(event: KeyboardEvent): boolean {
-    const position = this.getCursorPosition();
-    const { line, column } = position;
+    let position = this.getCursorPosition();
+    let { line, column } = position;
 
     if (line === 0 && column === 0 && event.keyCode === UP_ARROW) {
       if (!event.shiftKey) {
@@ -696,8 +646,8 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
       return false;
     }
 
-    const lastLine = this.lineCount - 1;
-    const lastCh = this.getLine(lastLine)!.length;
+    let lastLine = this.lineCount - 1;
+    let lastCh = this.getLine(lastLine)!.length;
     if (
       line === lastLine &&
       column === lastCh &&
@@ -731,21 +681,20 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
    */
   private _onMimeTypeChanged(): void {
     const mime = this._model.mimeType;
-    const editor = this._editor;
+    let editor = this._editor;
     // TODO: should we provide a hook for when the
     // mode is done being set?
     void Mode.ensure(mime).then(spec => {
       editor.setOption('mode', spec?.mime ?? 'null');
     });
-    const extraKeys = (editor.getOption('extraKeys' as any) ||
-      {}) as CodeMirror.KeyMap;
+    let extraKeys = editor.getOption('extraKeys') || {};
     const isCode = mime !== 'text/plain' && mime !== 'text/x-ipythongfm';
     if (isCode) {
       extraKeys['Backspace'] = 'delSpaceToPrevTabStop';
     } else {
       delete extraKeys['Backspace'];
     }
-    editor.setOption('extraKeys' as any, extraKeys);
+    editor.setOption('extraKeys', extraKeys);
   }
 
   /**
@@ -806,14 +755,14 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
         // Selections only appear to render correctly if the anchor
         // is before the head in the document. That is, reverse selections
         // do not appear as intended.
-        const forward: boolean =
+        let forward: boolean =
           selection.start.line < selection.end.line ||
           (selection.start.line === selection.end.line &&
             selection.start.column <= selection.end.column);
-        const anchor = this._toCodeMirrorPosition(
+        let anchor = this._toCodeMirrorPosition(
           forward ? selection.start : selection.end
         );
-        const head = this._toCodeMirrorPosition(
+        let head = this._toCodeMirrorPosition(
           forward ? selection.end : selection.start
         );
         let markerOptions: CodeMirror.TextMarkerOptions;
@@ -827,7 +776,7 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
         }
         markers.push(this.doc.markText(anchor, head, markerOptions));
       } else if (collaborator) {
-        const caret = this._getCaret(collaborator);
+        let caret = this._getCaret(collaborator);
         markers.push(
           this.doc.setBookmark(this._toCodeMirrorPosition(selection.end), {
             widget: caret
@@ -870,10 +819,10 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
   private _toTextMarkerOptions(
     style: CodeEditor.ISelectionStyle
   ): CodeMirror.TextMarkerOptions {
-    const r = parseInt(style.color.slice(1, 3), 16);
-    const g = parseInt(style.color.slice(3, 5), 16);
-    const b = parseInt(style.color.slice(5, 7), 16);
-    const css = `background-color: rgba( ${r}, ${g}, ${b}, 0.15)`;
+    let r = parseInt(style.color.slice(1, 3), 16);
+    let g = parseInt(style.color.slice(3, 5), 16);
+    let b = parseInt(style.color.slice(5, 7), 16);
+    let css = `background-color: rgba( ${r}, ${g}, ${b}, 0.15)`;
     return {
       className: style.className,
       title: style.displayName,
@@ -924,25 +873,23 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
       return;
     }
     this._changeGuard = true;
-    const doc = this.doc;
+    let doc = this.doc;
     switch (args.type) {
-      case 'insert': {
-        const pos = doc.posFromIndex(args.start);
+      case 'insert':
+        let pos = doc.posFromIndex(args.start);
         // Replace the range, including a '+input' orign,
         // which indicates that CodeMirror may merge changes
         // for undo/redo purposes.
         doc.replaceRange(args.value, pos, pos, '+input');
         break;
-      }
-      case 'remove': {
-        const from = doc.posFromIndex(args.start);
-        const to = doc.posFromIndex(args.end);
+      case 'remove':
+        let from = doc.posFromIndex(args.start);
+        let to = doc.posFromIndex(args.end);
         // Replace the range, including a '+input' orign,
         // which indicates that CodeMirror may merge changes
         // for undo/redo purposes.
         doc.replaceRange('', from, to, '+input');
         break;
-      }
       case 'set':
         doc.setValue(args.value);
         break;
@@ -963,10 +910,10 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
       return;
     }
     this._changeGuard = true;
-    const value = this._model.value;
-    const start = doc.indexFromPos(change.from);
-    const end = doc.indexFromPos(change.to);
-    const inserted = change.text.join('\n');
+    let value = this._model.value;
+    let start = doc.indexFromPos(change.from);
+    let end = doc.indexFromPos(change.to);
+    let inserted = change.text.join('\n');
 
     if (end !== start) {
       value.remove(start, end);
@@ -1051,20 +998,17 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
    * of a collaborator's cursor.
    */
   private _getCaret(collaborator: ICollaborator): HTMLElement {
-    // FIXME-TRANS: Is this localizable?
-    const name = collaborator ? collaborator.displayName : 'Anonymous';
-    const color = collaborator
-      ? collaborator.color
-      : this._selectionStyle.color;
-    const caret: HTMLElement = document.createElement('span');
+    let name = collaborator ? collaborator.displayName : 'Anonymous';
+    let color = collaborator ? collaborator.color : this._selectionStyle.color;
+    let caret: HTMLElement = document.createElement('span');
     caret.className = COLLABORATOR_CURSOR_CLASS;
     caret.style.borderBottomColor = color;
     caret.onmouseenter = () => {
       this._clearHover();
       this._hoverId = collaborator.sessionId;
-      const rect = caret.getBoundingClientRect();
+      let rect = caret.getBoundingClientRect();
       // Construct and place the hover box.
-      const hover = document.createElement('div');
+      let hover = document.createElement('div');
       hover.className = COLLABORATOR_HOVER_CLASS;
       hover.style.left = String(rect.left) + 'px';
       hover.style.top = String(rect.bottom) + 'px';
@@ -1095,27 +1039,26 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
    * Check for an out of sync editor.
    */
   private _checkSync(): void {
-    const change = this._lastChange;
+    let change = this._lastChange;
     if (!change) {
       return;
     }
     this._lastChange = null;
-    const editor = this._editor;
-    const doc = editor.getDoc();
+    let editor = this._editor;
+    let doc = editor.getDoc();
     if (doc.getValue() === this._model.value.text) {
       return;
     }
 
     void showDialog({
-      title: this._trans.__('Code Editor out of Sync'),
-      body: this._trans.__(
+      title: 'Code Editor out of Sync',
+      body:
         'Please open your browser JavaScript console for bug report instructions'
-      )
     });
-    console.warn(
+    console.log(
       'Please paste the following to https://github.com/jupyterlab/jupyterlab/issues/2951'
     );
-    console.warn(
+    console.log(
       JSON.stringify({
         model: this._model.value.text,
         view: doc.getValue(),
@@ -1128,8 +1071,6 @@ export class CodeMirrorEditor implements CodeEditor.IEditor {
     );
   }
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _model: CodeEditor.IModel;
   private _editor: CodeMirror.Editor;
   protected selectionMarkers: {
@@ -1179,9 +1120,6 @@ export namespace CodeMirrorEditor {
      */
     theme?: string;
 
-    // FIXME-TRANS: Handle theme localizable names
-    // themeDisplayName?: string
-
     /**
      * Whether to use the context-sensitive indentation that the mode provides
      * (or just indent the same as the line before).
@@ -1206,7 +1144,7 @@ export namespace CodeMirrorEditor {
      * Can be used to specify extra keybindings for the editor, alongside the
      * ones defined by keyMap. Should be either null, or a valid keymap value.
      */
-    extraKeys?: CodeMirror.KeyMap | null;
+    extraKeys?: any;
 
     /**
      * Can be used to add extra gutters (beyond or instead of the line number
@@ -1307,7 +1245,7 @@ export namespace CodeMirrorEditor {
   /**
    * The default configuration options for an editor.
    */
-  export const defaultConfig: Required<IConfig> = {
+  export let defaultConfig: Required<IConfig> = {
     ...CodeEditor.defaultConfig,
     mode: 'null',
     theme: 'jupyter',
@@ -1328,8 +1266,7 @@ export namespace CodeMirrorEditor {
     styleSelectedText: true,
     selectionPointer: false,
     rulers: [],
-    foldGutter: false,
-    handlePaste: true
+    foldGutter: false
   };
 
   /**
@@ -1351,10 +1288,10 @@ export namespace CodeMirrorEditor {
  */
 namespace Private {
   export function createEditor(
-    host: ShadowRoot,
+    host: HTMLElement,
     config: CodeMirrorEditor.IConfig
   ): CodeMirror.Editor {
-    const {
+    let {
       autoClosingBrackets,
       fontFamily,
       fontSize,
@@ -1366,14 +1303,14 @@ namespace Private {
       readOnly,
       ...otherOptions
     } = config;
-    const bareConfig = {
+    let bareConfig = {
       autoCloseBrackets: autoClosingBrackets ? {} : false,
       indentUnit: tabSize,
       indentWithTabs: !insertSpaces,
       lineWrapping: lineWrap === 'off' ? false : true,
       readOnly,
       ...otherOptions
-    } as CodeMirror.EditorConfiguration;
+    };
     return CodeMirror(el => {
       if (fontFamily) {
         el.style.fontFamily = fontFamily;
@@ -1403,17 +1340,17 @@ namespace Private {
    * Indent or insert a tab as appropriate.
    */
   export function indentMoreOrinsertTab(cm: CodeMirror.Editor): void {
-    const doc = cm.getDoc();
-    const from = doc.getCursor('from');
-    const to = doc.getCursor('to');
-    const sel = !posEq(from, to);
+    let doc = cm.getDoc();
+    let from = doc.getCursor('from');
+    let to = doc.getCursor('to');
+    let sel = !posEq(from, to);
     if (sel) {
       CodeMirror.commands['indentMore'](cm);
       return;
     }
     // Check for start of line.
-    const line = doc.getLine(from.line);
-    const before = line.slice(0, from.ch);
+    let line = doc.getLine(from.line);
+    let before = line.slice(0, from.ch);
     if (/^\s*$/.test(before)) {
       CodeMirror.commands['indentMore'](cm);
     } else {
@@ -1429,28 +1366,37 @@ namespace Private {
    * Delete spaces to the previous tab stob in a codemirror editor.
    */
   export function delSpaceToPrevTabStop(cm: CodeMirror.Editor): void {
-    const doc = cm.getDoc();
-    // default tabsize is 2, according to codemirror docs: https://codemirror.net/doc/manual.html#config
-    const tabSize = cm.getOption('indentUnit') ?? 2;
-    const ranges = doc.listSelections(); // handle multicursor
+    let doc = cm.getDoc();
+    let tabSize = cm.getOption('indentUnit');
+    let ranges = doc.listSelections(); // handle multicursor
     for (let i = ranges.length - 1; i >= 0; i--) {
       // iterate reverse so any deletions don't overlap
-      const head = ranges[i].head;
-      const anchor = ranges[i].anchor;
-      const isSelection = !posEq(head, anchor);
+      let head = ranges[i].head;
+      let anchor = ranges[i].anchor;
+      let isSelection = !posEq(head, anchor);
       if (isSelection) {
         doc.replaceRange('', anchor, head);
       } else {
-        const line = doc.getLine(head.line).substring(0, head.ch);
+        let line = doc.getLine(head.line).substring(0, head.ch);
         if (line.match(/^\ +$/) !== null) {
           // delete tabs
-          const prevTabStop = (Math.ceil(head.ch / tabSize) - 1) * tabSize;
-          const from = CodeMirror.Pos(head.line, prevTabStop);
+          let prevTabStop = (Math.ceil(head.ch / tabSize) - 1) * tabSize;
+          let from = CodeMirror.Pos(head.line, prevTabStop);
           doc.replaceRange('', from, head);
         } else {
           // delete non-tabs
-          const from = cm.findPosH(head, -1, 'char', false);
-          doc.replaceRange('', from, head);
+          if (head.ch === 0) {
+            if (head.line !== 0) {
+              let from = CodeMirror.Pos(
+                head.line - 1,
+                doc.getLine(head.line - 1).length
+              );
+              doc.replaceRange('', from, head);
+            }
+          } else {
+            let from = CodeMirror.Pos(head.line, head.ch - 1);
+            doc.replaceRange('', from, head);
+          }
         }
       }
     }
@@ -1473,7 +1419,7 @@ namespace Private {
    */
   function getActiveGutters(config: CodeMirrorEditor.IConfig): string[] {
     // The order of the classes will be the gutters order
-    const classToSwitch: { [val: string]: keyof CodeMirrorEditor.IConfig } = {
+    let classToSwitch: { [val: string]: keyof CodeMirrorEditor.IConfig } = {
       'CodeMirror-linenumbers': 'lineNumbers',
       'CodeMirror-foldgutter': 'codeFolding'
     };
@@ -1483,52 +1429,17 @@ namespace Private {
   }
 
   /**
-   * Set the stylesheet for the selected theme.
-   */
-  async function setTheme(
-    editor: CodeMirror.Editor,
-    shadowRoot: ShadowRoot,
-    theme: string
-  ): Promise<void> {
-    let stylesheet: string;
-
-    if (theme === 'jupyter') {
-      stylesheet = jupyterThemeCSS;
-    } else if (theme === 'default') {
-      stylesheet = '';
-    } else {
-      // Load the theme stylesheet.
-      const filename =
-        theme === 'solarized light' || theme === 'solarized dark'
-          ? 'solarized'
-          : theme;
-
-      const module = await import(
-        `!!to-string-loader!css-loader!codemirror/theme/${filename}.css`
-      );
-      stylesheet = module.default;
-    }
-
-    const themeStyleEl = shadowRoot.getElementById(
-      CODEMIRROR_THEME_STYLE_ID
-    ) as HTMLStyleElement;
-    themeStyleEl.textContent = stylesheet;
-    editor.setOption('theme', theme);
-  }
-
-  /**
    * Set a config option for the editor.
    */
   export function setOption<K extends keyof CodeMirrorEditor.IConfig>(
     editor: CodeMirror.Editor,
-    shadowRoot: ShadowRoot,
     option: K,
     value: CodeMirrorEditor.IConfig[K],
     config: CodeMirrorEditor.IConfig
   ): void {
-    const el = editor.getWrapperElement();
+    let el = editor.getWrapperElement();
     switch (option) {
-      case 'lineWrap': {
+      case 'lineWrap':
         const lineWrapping = value === 'off' ? false : true;
         const lines = el.querySelector('.CodeMirror-lines') as HTMLDivElement;
         const maxWidth =
@@ -1539,8 +1450,7 @@ namespace Private {
         lines.style.setProperty('width', width);
         editor.setOption('lineWrapping', lineWrapping);
         break;
-      }
-      case 'wordWrapColumn': {
+      case 'wordWrapColumn':
         const { lineWrap } = config;
         if (lineWrap === 'wordWrapColumn' || lineWrap === 'bounded') {
           const lines = el.querySelector('.CodeMirror-lines') as HTMLDivElement;
@@ -1548,22 +1458,18 @@ namespace Private {
           lines.style[prop] = `${value}ch`;
         }
         break;
-      }
       case 'tabSize':
-        editor.setOption(
-          'indentUnit',
-          value as CodeMirror.EditorConfiguration['tabSize']
-        );
+        editor.setOption('indentUnit', value);
         break;
       case 'insertSpaces':
         editor.setOption('indentWithTabs', !value);
         break;
       case 'autoClosingBrackets':
-        editor.setOption('autoCloseBrackets', value as any);
+        editor.setOption('autoCloseBrackets', value);
         break;
-      case 'rulers': {
-        const rulers = value as Array<number>;
-        (editor.setOption as any)(
+      case 'rulers':
+        let rulers = value as Array<number>;
+        editor.setOption(
           'rulers',
           rulers.map(column => {
             return {
@@ -1573,36 +1479,32 @@ namespace Private {
           })
         );
         break;
-      }
       case 'readOnly':
-        el.classList.toggle(READ_ONLY_CLASS, value as boolean);
-        (editor.setOption as any)(option, value);
+        el.classList.toggle(READ_ONLY_CLASS, value);
+        editor.setOption(option, value);
         break;
       case 'fontFamily':
-        el.style.fontFamily = value as string;
+        el.style.fontFamily = value;
         break;
       case 'fontSize':
         el.style.setProperty('font-size', value ? value + 'px' : null);
         break;
       case 'lineHeight':
-        el.style.lineHeight = (value ? value.toString() : null) as any;
+        el.style.lineHeight = value ? value.toString() : null;
         break;
       case 'gutters':
-        (editor.setOption as any)(option, getActiveGutters(config));
+        editor.setOption(option, getActiveGutters(config));
         break;
       case 'lineNumbers':
-        (editor.setOption as any)(option, value);
+        editor.setOption(option, value);
         editor.setOption('gutters', getActiveGutters(config));
         break;
       case 'codeFolding':
-        (editor.setOption as any)('foldGutter', value);
+        editor.setOption('foldGutter', value);
         editor.setOption('gutters', getActiveGutters(config));
         break;
-      case 'theme':
-        void setTheme(editor, shadowRoot, value as string);
-        break;
       default:
-        (editor.setOption as any)(option, value);
+        editor.setOption(option, value);
         break;
     }
   }

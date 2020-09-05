@@ -187,7 +187,7 @@ export namespace HoverBox {
     }
 
     // Move left to fit in the window.
-    const right = node.getBoundingClientRect().right;
+    let right = node.getBoundingClientRect().right;
     if (right > window.innerWidth) {
       left -= right - window.innerWidth;
       node.style.left = `${Math.ceil(left)}px`;

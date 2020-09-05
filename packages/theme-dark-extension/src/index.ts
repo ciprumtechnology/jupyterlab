@@ -8,24 +8,17 @@ import {
 
 import { IThemeManager } from '@jupyterlab/apputils';
 
-import { ITranslator } from '@jupyterlab/translation';
-
 /**
  * A plugin for the Jupyter Dark Theme.
  */
 const plugin: JupyterFrontEndPlugin<void> = {
   id: '@jupyterlab/theme-dark-extension:plugin',
-  requires: [IThemeManager, ITranslator],
-  activate: (
-    app: JupyterFrontEnd,
-    manager: IThemeManager,
-    translator: ITranslator
-  ) => {
-    const trans = translator.load('jupyterlab');
+  requires: [IThemeManager],
+  activate: (app: JupyterFrontEnd, manager: IThemeManager) => {
     const style = '@jupyterlab/theme-dark-extension/index.css';
+
     manager.register({
       name: 'JupyterLab Dark',
-      displayName: trans.__('JupyterLab Dark'),
       isLight: false,
       themeScrollbars: true,
       load: () => manager.loadCSS(style),

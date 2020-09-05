@@ -2,7 +2,8 @@
   "extends": "../../tsconfigbase",
   "compilerOptions": {
     "outDir": "lib",
-    "rootDir": "src"
+    "rootDir": "src",
+    "strictNullChecks": false
   },
   "include": ["src/*"],
   "references": [
@@ -22,19 +23,22 @@
       "path": "../mainmenu"
     },
     {
+      "path": "../nbformat"
+    },
+    {
       "path": "../notebook"
     },
     {
       "path": "../rendermime"
     },
     {
+      "path": "../services"
+    },
+    {
       "path": "../settingregistry"
     },
     {
       "path": "../statusbar"
-    },
-    {
-      "path": "../translation"
     },
     {
       "path": "../ui-components"

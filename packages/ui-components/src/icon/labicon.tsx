@@ -15,7 +15,7 @@ import blankSvgstr from '../../style/debug/blank.svg';
 import refreshSvgstr from '../../style/icons/toolbar/refresh.svg';
 
 export class LabIcon implements LabIcon.ILabIcon, VirtualElement.IRenderer {
-  /** *********
+  /***********
    * statics *
    ***********/
 
@@ -206,7 +206,7 @@ export class LabIcon implements LabIcon.ILabIcon, VirtualElement.IRenderer {
   private static _debug: boolean = false;
   private static _instances = new Map<string, LabIcon>();
 
-  /** *********
+  /***********
    * members *
    ***********/
 
@@ -350,7 +350,7 @@ export class LabIcon implements LabIcon.ILabIcon, VirtualElement.IRenderer {
     Private.initContainer({ container, className, styleProps, title });
 
     // add the svg node to the container
-    const svgElement = this.svgElement.cloneNode(true) as HTMLElement;
+    let svgElement = this.svgElement.cloneNode(true) as HTMLElement;
     container.appendChild(svgElement);
 
     return returnSvgElement ? svgElement : container;
@@ -441,7 +441,7 @@ export class LabIcon implements LabIcon.ILabIcon, VirtualElement.IRenderer {
   protected _initReact(displayName: string) {
     const component = React.forwardRef(
       (props: LabIcon.IProps = {}, ref: LabIcon.IReactRef) => {
-        const {
+        let {
           className,
           container,
           label,
@@ -616,7 +616,7 @@ export class LabIcon implements LabIcon.ILabIcon, VirtualElement.IRenderer {
  * A namespace for LabIcon statics.
  */
 export namespace LabIcon {
-  /** ***********
+  /*************
    * interfaces *
    *************/
 
@@ -696,7 +696,7 @@ export namespace LabIcon {
     fallback?: LabIcon;
   }
 
-  /** ******
+  /********
    * types *
    *********/
 
@@ -796,7 +796,6 @@ namespace Private {
       }
     }
   );
-  blankReact.displayName = 'BlankReact';
 
   export function initContainer({
     container,
@@ -841,11 +840,11 @@ namespace Private {
 
   export function setTitleSvg(svgNode: HTMLElement, title: string): void {
     // add a title node to the top level svg node
-    const titleNodes = svgNode.getElementsByTagName('title');
+    let titleNodes = svgNode.getElementsByTagName('title');
     if (titleNodes.length) {
       titleNodes[0].textContent = title;
     } else {
-      const titleNode = document.createElement('title');
+      let titleNode = document.createElement('title');
       titleNode.textContent = title;
       svgNode.appendChild(titleNode);
     }
@@ -891,7 +890,7 @@ namespace Private {
       protected _rendererOptions?: LabIcon.IRendererOptions
     ) {}
 
-    // eslint-disable-next-line
+    // tslint:disable-next-line:no-empty
     render(container: HTMLElement, options?: LabIcon.IRendererOptions): void {}
     unrender?(container: HTMLElement, options?: LabIcon.IRendererOptions): void;
   }
@@ -931,7 +930,7 @@ namespace Private {
         label = undefined;
       }
 
-      ReactDOM.render(
+      return ReactDOM.render(
         <this._icon.react
           container={container}
           label={label}

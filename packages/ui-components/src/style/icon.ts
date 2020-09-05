@@ -388,7 +388,7 @@ export namespace LabIconStyle {
         }
       },
       element: {
-        height: 'auto',
+        // width no height
         width: '20px'
       },
       options: {
@@ -551,7 +551,7 @@ export namespace LabIconStyle {
   }
 
   // cache style classes for builtin stylesheets
-  const _styleClassCache = new Map<string, string>();
+  let _styleClassCache = new Map<string, string>();
 
   /**
    * Get a typestyle class, given a set of icon styling props

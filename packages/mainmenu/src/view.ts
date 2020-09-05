@@ -24,6 +24,8 @@ export class ViewMenu extends JupyterLabMenu implements IViewMenu {
    */
   constructor(options: Menu.IOptions) {
     super(options);
+    this.menu.title.label = 'View';
+
     this.editorViewers = new Set<IViewMenu.IEditorViewer<Widget>>();
   }
 

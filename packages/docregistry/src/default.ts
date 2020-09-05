@@ -19,15 +19,12 @@ import { IChangedArgs, PathExt } from '@jupyterlab/coreutils';
 
 import { IModelDB } from '@jupyterlab/observables';
 
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
-
 import { DocumentRegistry, IDocumentWidget } from './index';
 
 /**
  * The default implementation of a document model.
  */
-export class DocumentModel
-  extends CodeEditor.Model
+export class DocumentModel extends CodeEditor.Model
   implements DocumentRegistry.ICodeModel {
   /**
    * Construct a new document model.
@@ -62,7 +59,7 @@ export class DocumentModel
     if (newValue === this._dirty) {
       return;
     }
-    const oldValue = this._dirty;
+    let oldValue = this._dirty;
     this._dirty = newValue;
     this.triggerStateChange({ name: 'dirty', oldValue, newValue });
   }
@@ -77,7 +74,7 @@ export class DocumentModel
     if (newValue === this._readOnly) {
       return;
     }
-    const oldValue = this._readOnly;
+    let oldValue = this._readOnly;
     this._readOnly = newValue;
     this.triggerStateChange({ name: 'readOnly', oldValue, newValue });
   }
@@ -230,7 +227,7 @@ export class TextModelFactory implements DocumentRegistry.CodeModelFactory {
    * Get the preferred kernel language given a file path.
    */
   preferredLanguage(path: string): string {
-    const mode = Mode.findByFileName(path);
+    let mode = Mode.findByFileName(path);
     return mode && mode.mode;
   }
 
@@ -282,7 +279,6 @@ export abstract class ABCWidgetFactory<
    * Construct a new `ABCWidgetFactory`.
    */
   constructor(options: DocumentRegistry.IWidgetFactoryOptions<T>) {
-    this._translator = options.translator || nullTranslator;
     this._name = options.name;
     this._readOnly = options.readOnly === undefined ? false : options.readOnly;
     this._defaultFor = options.defaultFor ? options.defaultFor.slice() : [];
@@ -379,13 +375,6 @@ export abstract class ABCWidgetFactory<
   }
 
   /**
-   * The aplication language translator.
-   */
-  get translator(): ITranslator {
-    return this._translator;
-  }
-
-  /**
    * Whether the kernel should be shutdown when the widget is closed.
    */
   get shutdownOnClose(): boolean {
@@ -441,7 +430,6 @@ export abstract class ABCWidgetFactory<
     | ((widget: T) => DocumentRegistry.IToolbarItem[])
     | undefined;
   private _isDisposed = false;
-  private _translator: ITranslator;
   private _name: string;
   private _readOnly: boolean;
   private _canStartKernel: boolean;
@@ -465,11 +453,9 @@ const DIRTY_CLASS = 'jp-mod-dirty';
  * A document widget implementation.
  */
 export class DocumentWidget<
-    T extends Widget = Widget,
-    U extends DocumentRegistry.IModel = DocumentRegistry.IModel
-  >
-  extends MainAreaWidget<T>
-  implements IDocumentWidget<T, U> {
+  T extends Widget = Widget,
+  U extends DocumentRegistry.IModel = DocumentRegistry.IModel
+> extends MainAreaWidget<T> implements IDocumentWidget<T, U> {
   constructor(options: DocumentWidget.IOptions<T, U>) {
     // Include the context ready promise in the widget reveal promise
     options.reveal = Promise.all([options.reveal, options.context.ready]);
@@ -544,6 +530,5 @@ export namespace DocumentWidget {
     U extends DocumentRegistry.IModel = DocumentRegistry.IModel
   > extends MainAreaWidget.IOptionsOptionalContent<T> {
     context: DocumentRegistry.IContext<U>;
-    translator?: ITranslator;
   }
 }

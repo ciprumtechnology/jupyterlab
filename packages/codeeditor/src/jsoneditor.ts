@@ -2,11 +2,6 @@
 // Distributed under the terms of the Modified BSD License.
 
 import { IObservableJSON } from '@jupyterlab/observables';
-import {
-  nullTranslator,
-  ITranslator,
-  TranslationBundle
-} from '@jupyterlab/translation';
 import { checkIcon, undoIcon } from '@jupyterlab/ui-components';
 
 import {
@@ -48,8 +43,7 @@ export class JSONEditor extends Widget {
    */
   constructor(options: JSONEditor.IOptions) {
     super();
-    this.translator = options.translator || nullTranslator;
-    this._trans = this.translator.load('jupyterlab');
+
     this.addClass(JSONEDITOR_CLASS);
 
     this.headerNode = document.createElement('div');
@@ -57,12 +51,12 @@ export class JSONEditor extends Widget {
 
     this.revertButtonNode = undoIcon.element({
       tag: 'span',
-      title: this._trans.__('Revert changes to data')
+      title: 'Revert changes to data'
     });
 
     this.commitButtonNode = checkIcon.element({
       tag: 'span',
-      title: this._trans.__('Commit changes to data'),
+      title: 'Commit changes to data',
       marginLeft: '8px'
     });
 
@@ -75,9 +69,9 @@ export class JSONEditor extends Widget {
     this.node.appendChild(this.headerNode);
     this.node.appendChild(this.editorHostNode);
 
-    const model = new CodeEditor.Model();
+    let model = new CodeEditor.Model();
 
-    model.value.text = this._trans.__('No data!');
+    model.value.text = 'No data!';
     model.mimeType = 'application/json';
     model.value.changed.connect(this._onValueChanged, this);
     this.model = model;
@@ -170,7 +164,7 @@ export class JSONEditor extends Widget {
    * Handle `after-attach` messages for the widget.
    */
   protected onAfterAttach(msg: Message): void {
-    const node = this.editorHostNode;
+    let node = this.editorHostNode;
     node.addEventListener('blur', this, true);
     node.addEventListener('click', this, true);
     this.revertButtonNode.hidden = true;
@@ -199,7 +193,7 @@ export class JSONEditor extends Widget {
    * Handle `before-detach` messages for the widget.
    */
   protected onBeforeDetach(msg: Message): void {
-    const node = this.editorHostNode;
+    let node = this.editorHostNode;
     node.removeEventListener('blur', this, true);
     node.removeEventListener('click', this, true);
     this.headerNode.removeEventListener('click', this);
@@ -228,7 +222,7 @@ export class JSONEditor extends Widget {
   private _onValueChanged(): void {
     let valid = true;
     try {
-      const value = JSON.parse(this.editor.model.value.text);
+      let value = JSON.parse(this.editor.model.value.text);
       this.removeClass(ERROR_CLASS);
       this._inputDirty =
         !this._changeGuard && !JSONExt.deepEqual(value, this._originalValue);
@@ -255,7 +249,7 @@ export class JSONEditor extends Widget {
    * Handle click events for the buttons.
    */
   private _evtClick(event: MouseEvent): void {
-    const target = event.target as HTMLElement;
+    let target = event.target as HTMLElement;
     if (this.revertButtonNode.contains(target)) {
       this._setValue();
     } else if (this.commitButtonNode.contains(target)) {
@@ -274,23 +268,23 @@ export class JSONEditor extends Widget {
    * Merge the user content.
    */
   private _mergeContent(): void {
-    const model = this.editor.model;
-    const old = this._originalValue;
-    const user = JSON.parse(model.value.text) as JSONObject;
-    const source = this.source;
+    let model = this.editor.model;
+    let old = this._originalValue;
+    let user = JSON.parse(model.value.text) as JSONObject;
+    let source = this.source;
     if (!source) {
       return;
     }
 
     // If it is in user and has changed from old, set in new.
-    for (const key in user) {
+    for (let key in user) {
       if (!JSONExt.deepEqual(user[key], old[key] || null)) {
         source.set(key, user[key]);
       }
     }
 
     // If it was in old and is not in user, remove from source.
-    for (const key in old) {
+    for (let key in old) {
       if (!(key in user)) {
         source.delete(key);
       }
@@ -306,14 +300,14 @@ export class JSONEditor extends Widget {
     this.revertButtonNode.hidden = true;
     this.commitButtonNode.hidden = true;
     this.removeClass(ERROR_CLASS);
-    const model = this.editor.model;
-    const content = this._source ? this._source.toJSON() : {};
+    let model = this.editor.model;
+    let content = this._source ? this._source.toJSON() : {};
     this._changeGuard = true;
     if (content === void 0) {
-      model.value.text = this._trans.__('No data!');
+      model.value.text = 'No data!';
       this._originalValue = JSONExt.emptyObject;
     } else {
-      const value = JSON.stringify(content, null, 4);
+      let value = JSON.stringify(content, null, 4);
       model.value.text = value;
       this._originalValue = content;
       // Move the cursor to within the brace.
@@ -327,8 +321,6 @@ export class JSONEditor extends Widget {
     this.revertButtonNode.hidden = true;
   }
 
-  protected translator: ITranslator;
-  private _trans: TranslationBundle;
   private _dataDirty = false;
   private _inputDirty = false;
   private _source: IObservableJSON | null = null;
@@ -348,10 +340,5 @@ export namespace JSONEditor {
      * The editor factory used by the editor.
      */
     editorFactory: CodeEditor.Factory;
-
-    /**
-     * The language translator.
-     */
-    translator?: ITranslator;
   }
 }

@@ -40,7 +40,7 @@ export class SettingConnector extends DataConnector<
     query: 'active' | 'all' = 'all'
   ): Promise<{ ids: string[]; values: ISettingRegistry.IPlugin[] }> {
     const { isDeferred, isDisabled } = PageConfig.Extension;
-    const { ids, values } = await this._connector.list();
+    let { ids, values } = await this._connector.list();
 
     if (query === 'all') {
       return { ids, values };

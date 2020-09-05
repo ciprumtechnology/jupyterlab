@@ -10,8 +10,7 @@ import { INotebookTracker } from './tokens';
 import { NotebookPanel } from './panel';
 import { Notebook } from './widget';
 
-export class NotebookTracker
-  extends WidgetTracker<NotebookPanel>
+export class NotebookTracker extends WidgetTracker<NotebookPanel>
   implements INotebookTracker {
   /**
    * The currently focused cell.
@@ -21,7 +20,7 @@ export class NotebookTracker
    * value is `null`.
    */
   get activeCell(): Cell | null {
-    const widget = this.currentWidget;
+    let widget = this.currentWidget;
     if (!widget) {
       return null;
     }
@@ -70,7 +69,7 @@ export class NotebookTracker
    */
   protected onCurrentChanged(widget: NotebookPanel): void {
     // Store an internal reference to active cell to prevent false positives.
-    const activeCell = this.activeCell;
+    let activeCell = this.activeCell;
     if (activeCell && activeCell === this._activeCell) {
       return;
     }

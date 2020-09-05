@@ -60,7 +60,7 @@ export class ServiceManager implements ServiceManager.IManager {
     this.sessions.connectionFailure.connect(this._onConnectionFailure, this);
     this.terminals.connectionFailure.connect(this._onConnectionFailure, this);
 
-    const readyList = [this.sessions.ready, this.kernelspecs.ready];
+    let readyList = [this.sessions.ready, this.kernelspecs.ready];
     if (this.terminals.isAvailable()) {
       readyList.push(this.terminals.ready);
     }

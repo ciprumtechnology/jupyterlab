@@ -23,9 +23,6 @@
     },
     {
       "path": "../statusbar"
-    },
-    {
-      "path": "../translation"
     }
   ]
 }

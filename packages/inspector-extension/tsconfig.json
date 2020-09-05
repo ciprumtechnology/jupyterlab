@@ -25,9 +25,6 @@
       "path": "../notebook"
     },
     {
-      "path": "../translation"
-    },
-    {
       "path": "../ui-components"
     }
   ]

@@ -5,26 +5,20 @@ import { showErrorMessage } from '@jupyterlab/apputils';
 
 import { ServerConnection, ServiceManager } from '@jupyterlab/services';
 
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
-
 import { IConnectionLost } from './tokens';
 
 /**
  * A default connection lost handler, which brings up an error dialog.
  */
-export const ConnectionLost: IConnectionLost = async function (
+export const ConnectionLost: IConnectionLost = async function(
   manager: ServiceManager.IManager,
-  err: ServerConnection.NetworkError,
-  translator?: ITranslator
+  err: ServerConnection.NetworkError
 ): Promise<void> {
-  translator = translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
-  const title = trans.__('Server Connection Error');
-  const networkMsg = trans.__(
+  const title = 'Server Connection Error';
+  const networkMsg =
     'A connection to the Jupyter server could not be established.\n' +
-      'JupyterLab will continue trying to reconnect.\n' +
-      'Check your network connection or Jupyter server configuration.\n'
-  );
+    'JupyterLab will continue trying to reconnect.\n' +
+    'Check your network connection or Jupyter server configuration.\n';
 
   return showErrorMessage(title, { message: networkMsg });
 };

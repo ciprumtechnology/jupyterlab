@@ -28,7 +28,7 @@ import { defaultRenderMime as localRendermime } from './rendermime';
 /**
  * Stub for the require() function.
  */
-declare let require: any;
+declare var require: any;
 
 /**
  * The default notebook content.
@@ -158,7 +158,7 @@ export namespace NBTestUtils {
    * Populate a notebook with default content.
    */
   export function populateNotebook(notebook: Notebook): void {
-    const model = new NotebookModel();
+    let model = new NotebookModel();
     model.fromJSON(DEFAULT_CONTENT);
     notebook.model = model;
   }

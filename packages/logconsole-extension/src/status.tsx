@@ -11,8 +11,6 @@ import {
 
 import { GroupItem, TextItem, interactiveItem } from '@jupyterlab/statusbar';
 
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
-
 import { listIcon } from '@jupyterlab/ui-components';
 
 import { Signal } from '@lumino/signaling';
@@ -29,19 +27,11 @@ import React from 'react';
 function LogConsoleStatusComponent(
   props: LogConsoleStatusComponent.IProps
 ): React.ReactElement<LogConsoleStatusComponent.IProps> {
-  const translator = props.translator || nullTranslator;
-  const trans = translator.load('jupyterlab');
   let title = '';
   if (props.newMessages > 0) {
-    title = trans.__(
-      '%1 new messages, %2 log entries for %3',
-      props.newMessages,
-      props.logEntries,
-      props.source
-    );
-  } else {
-    title += trans.__('%1 log entries for %2', props.logEntries, props.source);
+    title = `${props.newMessages} new messages, `;
   }
+  title += `${props.logEntries} log entries for ${props.source}`;
   return (
     <GroupItem spacing={0} onClick={props.handleClick} title={title}>
       <listIcon.react top={'2px'} stylesheet={'statusBar'} />
@@ -78,11 +68,6 @@ namespace LogConsoleStatusComponent {
      * Log source name
      */
     source: string | null;
-
-    /**
-     * The application language translator
-     */
-    translator?: ITranslator;
   }
 }
 
@@ -97,7 +82,6 @@ export class LogConsoleStatus extends VDomRenderer<LogConsoleStatus.Model> {
    */
   constructor(options: LogConsoleStatus.IOptions) {
     super(new LogConsoleStatus.Model(options.loggerRegistry));
-    this.translator = options.translator || nullTranslator;
     this._handleClick = options.handleClick;
     this.addClass(interactiveItem);
     this.addClass('jp-LogConsoleStatusItem');
@@ -112,7 +96,7 @@ export class LogConsoleStatus extends VDomRenderer<LogConsoleStatus.Model> {
       return null;
     }
     this.show();
-    const {
+    let {
       flashEnabled,
       messages,
       source,
@@ -135,7 +119,6 @@ export class LogConsoleStatus extends VDomRenderer<LogConsoleStatus.Model> {
         logEntries={messages}
         newMessages={version - versionDisplayed}
         source={this.model.source}
-        translator={this.translator}
       />
     );
   }
@@ -160,7 +143,6 @@ export class LogConsoleStatus extends VDomRenderer<LogConsoleStatus.Model> {
     this.removeClass('jp-mod-selected');
   }
 
-  readonly translator: ITranslator;
   private _handleClick: () => void;
 }
 
@@ -317,7 +299,7 @@ export namespace LogConsoleStatus {
 
     private _handleLogRegistryChange() {
       const loggers = this._loggerRegistry.getLoggers();
-      for (const logger of loggers) {
+      for (let logger of loggers) {
         if (!this._sourceVersion.has(logger.source)) {
           logger.contentChanged.connect(this._handleLogContentChange, this);
           this._sourceVersion.set(logger.source, {
@@ -375,10 +357,5 @@ export namespace LogConsoleStatus {
      * Log Console panel is launched.
      */
     handleClick: () => void;
-
-    /**
-     * Language translator.
-     */
-    translator?: ITranslator;
   }
 }

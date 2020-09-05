@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -84,15 +84,15 @@ export class OutputModel implements IOutputModel {
    * Construct a new output model.
    */
   constructor(options: IOutputModel.IOptions) {
-    const { data, metadata, trusted } = Private.getBundleOptions(options);
+    let { data, metadata, trusted } = Private.getBundleOptions(options);
     this._data = new ObservableJSON({ values: data as JSONObject });
     this._rawData = data;
     this._metadata = new ObservableJSON({ values: metadata as JSONObject });
     this._rawMetadata = metadata;
     this.trusted = trusted;
     // Make a copy of the data.
-    const value = options.value;
-    for (const key in value) {
+    let value = options.value;
+    for (let key in value) {
       // Ignore data and metadata that were stripped.
       switch (key) {
         case 'data':
@@ -178,8 +178,8 @@ export class OutputModel implements IOutputModel {
    * Serialize the model to JSON.
    */
   toJSON(): nbformat.IOutput {
-    const output: PartialJSONValue = {};
-    for (const key in this._raw) {
+    let output: PartialJSONValue = {};
+    for (let key in this._raw) {
       output[key] = Private.extract(this._raw, key);
     }
     switch (this.type) {
@@ -204,20 +204,20 @@ export class OutputModel implements IOutputModel {
     observable: IObservableJSON,
     data: ReadonlyPartialJSONObject
   ) {
-    const oldKeys = observable.keys();
-    const newKeys = Object.keys(data);
+    let oldKeys = observable.keys();
+    let newKeys = Object.keys(data);
 
     // Handle removed keys.
-    for (const key of oldKeys) {
+    for (let key of oldKeys) {
       if (newKeys.indexOf(key) === -1) {
         observable.delete(key);
       }
     }
 
     // Handle changed data.
-    for (const key of newKeys) {
-      const oldValue = observable.get(key);
-      const newValue = data[key];
+    for (let key of newKeys) {
+      let oldValue = observable.get(key);
+      let newValue = data[key];
       if (oldValue !== newValue) {
         observable.set(key, newValue as JSONValue);
       }
@@ -282,7 +282,7 @@ namespace Private {
       }
     } else if (nbformat.isError(output)) {
       bundle['application/vnd.jupyter.error'] = output;
-      const traceback = output.traceback.join('\n');
+      let traceback = output.traceback.join('\n');
       bundle['application/vnd.jupyter.stderr'] =
         traceback || `${output.ename}: ${output.evalue}`;
     }
@@ -293,9 +293,9 @@ namespace Private {
    * Get the metadata from an output message.
    */
   export function getMetadata(output: nbformat.IOutput): PartialJSONObject {
-    const value: PartialJSONObject = Object.create(null);
+    let value: PartialJSONObject = Object.create(null);
     if (nbformat.isExecuteResult(output) || nbformat.isDisplayData(output)) {
-      for (const key in output.metadata) {
+      for (let key in output.metadata) {
         value[key] = extract(output.metadata, key);
       }
     }
@@ -308,9 +308,9 @@ namespace Private {
   export function getBundleOptions(
     options: IOutputModel.IOptions
   ): Required<Omit<MimeModel.IOptions, 'callback'>> {
-    const data = getData(options.value);
-    const metadata = getMetadata(options.value);
-    const trusted = !!options.trusted;
+    let data = getData(options.value);
+    let metadata = getMetadata(options.value);
+    let trusted = !!options.trusted;
     return { data, metadata, trusted };
   }
 
@@ -321,7 +321,7 @@ namespace Private {
     value: ReadonlyPartialJSONObject,
     key: string
   ): PartialJSONValue | undefined {
-    const item = value[key];
+    let item = value[key];
     if (item === undefined || JSONExt.isPrimitive(item)) {
       return item;
     }
@@ -332,8 +332,8 @@ namespace Private {
    * Convert a mime bundle to mime data.
    */
   function convertBundle(bundle: nbformat.IMimeBundle): PartialJSONObject {
-    const map: PartialJSONObject = Object.create(null);
-    for (const mimeType in bundle) {
+    let map: PartialJSONObject = Object.create(null);
+    for (let mimeType in bundle) {
       map[mimeType] = extract(bundle, mimeType);
     }
     return map;

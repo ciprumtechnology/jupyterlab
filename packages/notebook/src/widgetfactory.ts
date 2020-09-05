@@ -20,8 +20,6 @@ import {
   sessionContextDialogs
 } from '@jupyterlab/apputils';
 
-import { ITranslator } from '@jupyterlab/translation';
-
 /**
  * A widget factory for notebook panels.
  */
@@ -92,7 +90,7 @@ export class NotebookWidgetFactory extends ABCWidgetFactory<
     context: DocumentRegistry.IContext<INotebookModel>,
     source?: NotebookPanel
   ): NotebookPanel {
-    const nbOptions = {
+    let nbOptions = {
       rendermime: source
         ? source.content.rendermime
         : this.rendermime.clone({ resolver: context.urlResolver }),
@@ -103,7 +101,7 @@ export class NotebookWidgetFactory extends ABCWidgetFactory<
         ? source.content.notebookConfig
         : this._notebookConfig
     };
-    const content = this.contentFactory.createNotebook(nbOptions);
+    let content = this.contentFactory.createNotebook(nbOptions);
 
     return new NotebookPanel({ context, content });
   }
@@ -114,11 +112,7 @@ export class NotebookWidgetFactory extends ABCWidgetFactory<
   protected defaultToolbarFactory(
     widget: NotebookPanel
   ): DocumentRegistry.IToolbarItem[] {
-    return ToolbarItems.getDefaultItems(
-      widget,
-      this._sessionDialogs,
-      this.translator
-    );
+    return ToolbarItems.getDefaultItems(widget, this._sessionDialogs);
   }
 
   private _editorConfig: StaticNotebook.IEditorConfig;
@@ -164,11 +158,6 @@ export namespace NotebookWidgetFactory {
      * The session context dialogs.
      */
     sessionDialogs?: ISessionContextDialogs;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**

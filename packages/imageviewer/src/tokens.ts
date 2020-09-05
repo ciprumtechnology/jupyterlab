@@ -10,14 +10,14 @@ import { Token } from '@lumino/coreutils';
 import { ImageViewer } from './widget';
 
 /**
- * A class that tracks image widgets.
+ * A class that tracks editor widgets.
  */
 export interface IImageTracker
   extends IWidgetTracker<IDocumentWidget<ImageViewer>> {}
 
 /* tslint:disable */
 /**
- * The image tracker token.
+ * The editor tracker token.
  */
 export const IImageTracker = new Token<IImageTracker>(
   '@jupyterlab/imageviewer:IImageTracker'

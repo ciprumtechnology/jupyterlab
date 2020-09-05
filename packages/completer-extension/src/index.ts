@@ -60,7 +60,7 @@ const manager: JupyterFrontEndPlugin<ICompletionManager> = {
 
     app.commands.addCommand(CommandIDs.invoke, {
       execute: args => {
-        const id = args && (args['id'] as string);
+        let id = args && (args['id'] as string);
         if (!id) {
           return;
         }
@@ -74,7 +74,7 @@ const manager: JupyterFrontEndPlugin<ICompletionManager> = {
 
     app.commands.addCommand(CommandIDs.select, {
       execute: args => {
-        const id = args && (args['id'] as string);
+        let id = args && (args['id'] as string);
         if (!id) {
           return;
         }
@@ -88,16 +88,12 @@ const manager: JupyterFrontEndPlugin<ICompletionManager> = {
 
     return {
       register: (
-        completable: ICompletionManager.ICompletable,
-        renderer: Completer.IRenderer = Completer.defaultRenderer
+        completable: ICompletionManager.ICompletable
       ): ICompletionManager.ICompletableAttributes => {
         const { connector, editor, parent } = completable;
         const model = new CompleterModel();
-        const completer = new Completer({ editor, model, renderer });
-        const handler = new CompletionHandler({
-          completer,
-          connector
-        });
+        const completer = new Completer({ editor, model });
+        const handler = new CompletionHandler({ completer, connector });
         const id = parent.id;
 
         // Hide the widget when it first loads.
@@ -147,7 +143,7 @@ const consoles: JupyterFrontEndPlugin<void> = {
       const connector = new CompletionConnector({ session, editor });
       const handler = manager.register({ connector, editor, parent: widget });
 
-      const updateConnector = () => {
+      let updateConnector = () => {
         const editor = anchor.promptCell?.editor ?? null;
         const session = anchor.sessionContext.session;
 
@@ -212,7 +208,7 @@ const notebooks: JupyterFrontEndPlugin<void> = {
       const connector = new CompletionConnector({ session, editor });
       const handler = manager.register({ connector, editor, parent: panel });
 
-      const updateConnector = () => {
+      let updateConnector = () => {
         const editor = panel.content.activeCell?.editor ?? null;
         const session = panel.sessionContext.session;
 

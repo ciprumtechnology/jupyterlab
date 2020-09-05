@@ -16,7 +16,6 @@ import {
   RunningSessions
 } from '@jupyterlab/running';
 import { Session } from '@jupyterlab/services';
-import { ITranslator } from '@jupyterlab/translation';
 import {
   consoleIcon,
   fileIcon,
@@ -31,7 +30,6 @@ const plugin: JupyterFrontEndPlugin<IRunningSessionManagers> = {
   activate,
   id: '@jupyterlab/running-extension:plugin',
   provides: IRunningSessionManagers,
-  requires: [ITranslator],
   optional: [ILayoutRestorer],
   autoStart: true
 };
@@ -46,14 +44,12 @@ export default plugin;
  */
 function activate(
   app: JupyterFrontEnd,
-  translator: ITranslator,
   restorer: ILayoutRestorer | null
 ): IRunningSessionManagers {
-  const trans = translator.load('jupyterlab');
-  const runningSessionManagers = new RunningSessionManagers();
-  const running = new RunningSessions(runningSessionManagers, translator);
+  let runningSessionManagers = new RunningSessionManagers();
+  let running = new RunningSessions(runningSessionManagers);
   running.id = 'jp-running-sessions';
-  running.title.caption = trans.__('Running Terminals and Kernels');
+  running.title.caption = 'Running Terminals and Kernels';
   running.title.icon = runningIcon;
 
   // Let the application restorer track the running panel for restoration of
@@ -62,7 +58,7 @@ function activate(
   if (restorer) {
     restorer.add(running, 'running-sessions');
   }
-  addKernelRunningSessionManager(runningSessionManagers, translator, app);
+  addKernelRunningSessionManager(runningSessionManagers, app);
   // Rank has been chosen somewhat arbitrarily to give priority to the running
   // sessions widget in the sidebar.
   app.shell.add(running, 'left', { rank: 200 });
@@ -75,12 +71,10 @@ function activate(
  */
 function addKernelRunningSessionManager(
   managers: IRunningSessionManagers,
-  translator: ITranslator,
   app: JupyterFrontEnd
 ) {
-  const trans = translator.load('jupyterlab');
-  const manager = app.serviceManager.sessions;
-  const specsManager = app.serviceManager.kernelspecs;
+  let manager = app.serviceManager.sessions;
+  let specsManager = app.serviceManager.kernelspecs;
   function filterSessions(m: Session.IModel) {
     return !!(
       (m.name || PathExt.basename(m.path)).indexOf('.') !== -1 || m.name
@@ -88,7 +82,7 @@ function addKernelRunningSessionManager(
   }
 
   managers.add({
-    name: trans.__('Kernels'),
+    name: 'Kernel',
     running: () => {
       return toArray(manager.running())
         .filter(filterSessions)
@@ -104,7 +98,7 @@ function addKernelRunningSessionManager(
       this._model = model;
     }
     open() {
-      const { path, type } = this._model;
+      let { path, type } = this._model;
       if (type.toLowerCase() === 'console') {
         void app.commands.execute('console:open', { path });
       } else {
@@ -115,7 +109,7 @@ function addKernelRunningSessionManager(
       return manager.shutdown(this._model.id);
     }
     icon() {
-      const { name, path, type } = this._model;
+      let { name, path, type } = this._model;
       if ((name || PathExt.basename(path)).indexOf('.ipynb') !== -1) {
         return notebookIcon;
       } else if (type.toLowerCase() === 'console') {
@@ -127,13 +121,13 @@ function addKernelRunningSessionManager(
       return this._model.name || PathExt.basename(this._model.path);
     }
     labelTitle() {
-      const { kernel, path } = this._model;
+      let { kernel, path } = this._model;
       let kernelName = kernel?.name;
       if (kernelName && specsManager.specs) {
         const spec = specsManager.specs.kernelspecs[kernelName];
         kernelName = spec ? spec.display_name : 'unknown';
       }
-      return trans.__('Path: %1\nKernel: %2', path, kernelName);
+      return `Path: ${path}\nKernel: ${kernelName}`;
     }
 
     private _model: Session.IModel;

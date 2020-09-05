@@ -56,7 +56,7 @@ Next create a conda environment that includes:
 4. `git <https://git-scm.com>`__, a version control system you'll use to
    take snapshots of your work as you progress through this tutorial
 
-It's a best practice to leave the root conda environment (i.e., the environment created
+It's best practice to leave the root conda environment (i.e., the environment created
 by the miniconda installer) untouched and install your project-specific
 dependencies in a named conda environment. Run this command to create a
 new environment named ``jupyterlab-ext``.
@@ -109,12 +109,11 @@ prompts (``apod`` stands for Astronomy Picture of the Day, the NASA service we
 are using to fetch pictures).
 
 ::
+
     author_name []: Your Name
-    python_name [myextension]: jupyterlab_apod
-    labextension_name [myextension]: jupyterlab_apod
+    extension_name [myextension]: jupyterlab_apod
     project_short_description [A JupyterLab extension.]: Show a random NASA Astronomy Picture of the Day in a JupyterLab panel
     has_server_extension [n]: n
-    has_binder [n]: y
     repository [https://github.com/my_name/myextension]: https://github.com/my_name/jupyterlab_apod
 
 Note: if not using a repository, leave the repository field blank. You can come
@@ -131,7 +130,61 @@ You should see a list like the following.
 
 ::
 
-    LICENSE          MANIFEST.in      README.md        binder/          jupyterlab_apod/ package.json     pyproject.toml   setup.py         src/             style/           tsconfig.json
+    LICENSE  README.md  package.json  src  style  tsconfig.json
+
+Build and install the extension for development
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Your new extension project has enough code in it to see it working in
+your JupyterLab. Run the following commands to install the initial
+project dependencies and install it in the JupyterLab environment. We
+defer building since it will be built in the next step.
+
+.. note::
+
+   This tutorial uses ``jlpm`` to install Javascript packages and
+   run build commands, which is JupyterLab's bundled
+   version of ``yarn``. If you prefer, you can use another Javascript
+   package manager like ``npm`` or ``yarn`` itself.
+
+
+.. code:: bash
+
+    jlpm install
+    jupyter labextension install . --no-build
+
+After the install completes, open a second terminal. Run these commands
+to activate the ``jupyterlab-ext`` environment and to start a JupyterLab
+instance in watch mode so that it will keep up with our changes as we
+make them.
+
+.. code:: bash
+
+    conda activate jupyterlab-ext
+    jupyter lab --watch
+
+See the initial extension in action
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+After building with your extension, JupyterLab should open in your
+default web browser.
+
+In that browser window, open the JavaScript console
+by following the instructions for your browser:
+
+-  `Accessing the DevTools in Google
+   Chrome <https://developer.chrome.com/devtools#access>`__
+-  `Opening the Web Console in
+   Firefox <https://developer.mozilla.org/en-US/docs/Tools/Web_Console/Opening_the_Web_Console>`__
+
+After you reload the page with the console open, you should see a message that says
+``JupyterLab extension jupyterlab_apod is activated!`` in the console.
+If you do, congratulations, you're ready to start modifying the extension!
+If not, go back make sure you didn't miss a step, and `reach
+out <https://github.com/jupyterlab/jupyterlab/blob/master/README.md#getting-help>`__ if you're stuck.
+
+Note: Leave the terminal running the ``jupyter lab --watch`` command
+open.
 
 Commit what you have to git
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,59 +205,6 @@ can compare your work throughout this tutorial with the commits in a
 reference version of ``jupyterlab_apod`` on GitHub at
 https://github.com/jupyterlab/jupyterlab_apod.
 
-
-Build and install the extension for development
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-Your new extension project has enough code in it to see it working in your
-JupyterLab. Run the following commands to install the initial project
-dependencies and install the extension into the JupyterLab environment.
-
-.. code:: bash
-
-    pip install -ve .
-
-The above command copies the frontend part of the extension into JupyterLab.
-We can run this ``pip install`` command again every time we make a change to
-copy the change into JupyterLab. Even better, on Linux or macOS, we can use
-the ``develop`` command to create a symbolic link from JupyterLab to our
-source directory. This means our changes are automatically available in
-JupyterLab:
-
-.. code:: bash
-
-    jupyter labextension develop --overwrite .
-
-See the initial extension in action
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-After the install completes, open a second terminal. Run these commands to
-activate the ``jupyterlab-ext`` environment and start JupyterLab in your
-default web browser.
-
-.. code:: bash
-
-    conda activate jupyterlab-ext
-    jupyter lab
-
-In that browser window, open the JavaScript console
-by following the instructions for your browser:
-
--  `Accessing the DevTools in Google
-   Chrome <https://developer.chrome.com/devtools#access>`__
--  `Opening the Web Console in
-   Firefox <https://developer.mozilla.org/en-US/docs/Tools/Web_Console/Opening_the_Web_Console>`__
-
-After you reload the page with the console open, you should see a message that says
-``JupyterLab extension jupyterlab_apod is activated!`` in the console.
-If you do, congratulations, you're ready to start modifying the extension!
-If not, go back make sure you didn't miss a step, and `reach
-out <https://github.com/jupyterlab/jupyterlab/blob/master/README.md#getting-help>`__ if you're stuck.
-
-Note: Leave the terminal running the ``jupyter lab`` command open and running
-JupyterLab to see the effects of changes below.
-
-
 Add an Astronomy Picture of the Day widget
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -216,18 +216,19 @@ you in JupyterLab. For your first addition, you're going to add a
 *Random Astronomy Picture* command to the palette and get it to show an *Astronomy Picture*
 tab panel when invoked.
 
-Fire up your favorite text editor and open the ``src/index.ts`` file in your
-extension project. Change the import at the top of the file to get a reference
-to the command palette interface and the `JupyterFrontEnd` instance.
+Fire up your favorite text editor and open the ``src/index.ts`` file in
+your extension project. Change the import at the top of the file to get
+a reference to the command palette interface and the Jupyter front end.
 
 .. code:: typescript
 
     import {
-      JupyterFrontEnd,
-      JupyterFrontEndPlugin
+      JupyterFrontEnd, JupyterFrontEndPlugin
     } from '@jupyterlab/application';
 
-    import { ICommandPalette } from '@jupyterlab/apputils';
+    import {
+      ICommandPalette
+    } from '@jupyterlab/apputils';
 
 Locate the ``extension`` object of type ``JupyterFrontEndPlugin``. Change the
 definition so that it reads like so:
@@ -238,7 +239,7 @@ definition so that it reads like so:
      * Initialization data for the jupyterlab_apod extension.
      */
     const extension: JupyterFrontEndPlugin<void> = {
-      id: 'jupyterlab-apod',
+      id: 'jupyterlab_apod',
       autoStart: true,
       requires: [ICommandPalette],
       activate: (app: JupyterFrontEnd, palette: ICommandPalette) => {
@@ -268,45 +269,39 @@ Finally, run the following to rebuild your extension.
 
 .. code:: bash
 
-    jlpm run build:all
+    jlpm run build
 
-
-.. note::
-
-   This tutorial uses ``jlpm`` to install Javascript packages and
-   run build commands, which is JupyterLab's bundled
-   version of ``yarn``. If you prefer, you can use another Javascript
-   package manager like ``npm`` or ``yarn`` itself.
-
-After the extension build finishes, return to the browser tab that opened when
-you started JupyterLab. Refresh it and look in the console. You should see the
-same activation message as before, plus the new message about the
-ICommandPalette instance you just added. If you don't, check the output of the
-build command for errors and correct your code.
+JupyterLab will rebuild after the extension does. You can
+see it's progress in the ``jupyter lab --watch`` window. After that
+finishes, return to the browser tab that opened when you
+started JupyterLab. Refresh it and look in the console. You should see
+the same activation message as before, plus the new message about the
+ICommandPalette instance you just added. If you don't, check the output
+of the build command for errors and correct your code.
 
 ::
 
     JupyterLab extension jupyterlab_apod is activated!
     ICommandPalette: Palette {_palette: CommandPalette}
 
-Note that we had to run ``jlpm run build:all`` in order for the bundle to
-update. This command does two things: compiles the TypeScript files in `src/`
-into JavaScript files in ``lib/`` (``jlpm run build``), then bundles the
-JavaScript files in ``lib/`` into a JupyterLab extension in
-``jupyterlab_apod/static`` (``jlpm run build:extension``). If you wish to avoid
-running ``jlpm run build:all`` after each change, you can open a third terminal,
-activate the ``jupyterlab-ext`` environment, and run the ``jlpm run watch``
-command from your extension directory, which will automatically compile the
-TypeScript files as they are changed and saved.
+Note that we had to run ``jlpm run build`` in order for the bundle to
+update, because it is using the compiled JavaScript files in ``/lib``.
+If you wish to avoid running ``jlpm run build`` after each change, you
+can open a third terminal, and run the ``jlpm run watch`` command from
+your extension directory, which will automatically compile the
+TypeScript files as they change.
 
 Now return to your editor. Modify the imports at the top of the file to add a few more imports:
 
 .. code:: typescript
 
-    import { ICommandPalette, MainAreaWidget } from '@jupyterlab/apputils';
+    import {
+      ICommandPalette, MainAreaWidget
+    } from '@jupyterlab/apputils';
 
-    import { Widget } from '@lumino/widgets';
-
+    import {
+      Widget
+    } from '@lumino/widgets';
 
 Install this new dependency as well:
 
@@ -325,7 +320,7 @@ code:
 
         // Create a blank content widget inside of a MainAreaWidget
         const content = new Widget();
-        const widget = new MainAreaWidget({ content });
+        const widget = new MainAreaWidget({content});
         widget.id = 'apod-jupyterlab';
         widget.title.label = 'Astronomy Picture';
         widget.title.closable = true;
@@ -345,29 +340,30 @@ code:
         });
 
         // Add the command to the palette.
-        palette.addItem({ command, category: 'Tutorial' });
+        palette.addItem({command, category: 'Tutorial'});
       }
 
-The first new block of code creates a ``MainAreaWidget`` instance with an
-empty content ``Widget`` as its child. It also assigns the main area widget a
-unique ID, gives it a label that will appear as its tab title, and makes the
-tab closable by the user. The second block of code adds a new command with id
-``apod:open`` and label *Random Astronomy Picture* to JupyterLab. When the
-command executes, it attaches the widget to the main display area if it is not
-already present and then makes it the active tab. The last new line of code
-uses the command id to add the command to the command palette in a section
-called *Tutorial*.
+The first new block of code creates a ``MainAreaWidget`` instance with an empty
+content ``Widget`` as its child. It also assigns the main area widget a unique
+ID, gives it a label that will appear as its tab title, and makes the tab
+closable by the user.
+The second block of code adds a new command with id ``apod:open`` and label *Random Astronomy Picture*
+to JupyterLab. When the command executes,
+it attaches the widget to the main display area if it is not already
+present and then makes it the active tab. The last new line of code uses the command id to add
+the command to the command palette in a section called *Tutorial*.
 
-Build your extension again using ``jlpm run build:all`` (unless you are using
+Build your extension again using ``jlpm run build`` (unless you are using
 ``jlpm run watch`` already) and refresh the browser tab. Open the command
-palette on the left side by clicking on *Commands* and type *Astronomy* in the
-search box. Your *Random Astronomy Picture* command should appear. Click it or
-select it with the keyboard and press *Enter*. You should see a new, blank
-panel appear with the tab title *Astronomy Picture*. Click the *x* on the tab
-to close it and activate the command again. The tab should reappear. Finally,
-click one of the launcher tabs so that the *Astronomy Picture* panel is still
-open but no longer active. Now run the *Random Astronomy Picture* command one
-more time. The single *Astronomy Picture* tab should come to the foreground.
+palette on the left side by clicking on *Commands* and type *Astronomy* in
+the search box. Your *Random Astronomy Picture*
+command should appear. Click it or select it with the keyboard and press
+*Enter*. You should see a new, blank panel appear with the tab title
+*Astronomy Picture*. Click the *x* on the tab to close it and activate the
+command again. The tab should reappear. Finally, click one of the
+launcher tabs so that the *Astronomy Picture* panel is still open but no longer
+active. Now run the *Random Astronomy Picture* command one more time. The
+single *Astronomy Picture* tab should come to the foreground.
 
 .. figure:: extension_tutorial_empty.png
    :align: center
@@ -378,13 +374,13 @@ more time. The single *Astronomy Picture* tab should come to the foreground.
 
 If your widget is not behaving, compare your code with the reference
 project state at the `01-show-a-panel
-tag <https://github.com/jupyterlab/jupyterlab_apod/tree/3.0-01-show-a-panel>`__.
+tag <https://github.com/jupyterlab/jupyterlab_apod/tree/2.0-01-show-a-panel>`__.
 Once you've got everything working properly, git commit your changes and
 carry on.
 
 .. code-block:: bash
 
-    git add package.json src/index.ts
+    git add .
     git commit -m 'Show Astronomy Picture command in palette'
 
 Show a picture in the panel
@@ -447,7 +443,7 @@ And update the ``activate`` method to be ``async`` since we are now using
 
         activate: async (app: JupyterFrontEnd, palette: ICommandPalette) =>
 
-Rebuild your extension if necessary (``jlpm run build:all``), refresh your browser
+Rebuild your extension if necessary (``jlpm run build``), refresh your browser
 tab, and run the *Random Astronomy Picture* command again. You should now see a
 picture in the panel when it opens (if that random date had a picture and not a
 video).
@@ -465,12 +461,12 @@ panel. You'll address both of these problems in the upcoming sections.
 
 If you don't see a image at all, compare your code with the
 `02-show-an-image
-tag <https://github.com/jupyterlab/jupyterlab_apod/tree/3.0-02-show-an-image>`__
+tag <https://github.com/jupyterlab/jupyterlab_apod/tree/2.0-02-show-an-image>`__
 in the reference project. When it's working, make another git commit.
 
 .. code:: bash
 
-    git add src/index.ts
+    git add .
     git commit -m 'Show a picture in the panel'
 
 Improve the widget behavior
@@ -560,7 +556,7 @@ The beginning of the function should read like the following:
       // Keep all the remaining command lines the same
       // as before from here down ...
 
-Build your extension if necessary (``jlpm run build:all``) and refresh your
+Build your extension if necessary (``jlpm run build``) and refresh your
 JupyterLab browser tab. Invoke the *Random Astronomy Picture* command and
 confirm the image is centered with the copyright information below it. Resize
 the browser window or the panel so that the image is larger than the
@@ -569,12 +565,12 @@ of the image.
 
 If anything is not working correctly, compare your code with the reference project
 `03-style-and-attribute
-tag <https://github.com/jupyterlab/jupyterlab_apod/tree/3.0-03-style-and-attribute>`__.
+tag <https://github.com/jupyterlab/jupyterlab_apod/tree/2.0-03-style-and-attribute>`__.
 When everything is working as expected, make another commit.
 
 .. code:: bash
 
-    git add style/index.css src/index.ts
+    git add .
     git commit -m 'Add styling, attribution, error handling'
 
 Show a new image on demand
@@ -594,7 +590,9 @@ Add the following additional import to the top of the file.
 
 .. code-block:: typescript
 
-    import { Message } from '@lumino/messaging';
+    import {
+      Message
+    } from '@lumino/messaging';
 
 Install this dependency:
 
@@ -686,7 +684,7 @@ function.
 Next move the remaining logic in ``activate`` to a new, top-level
 function just below the ``APODWidget`` class definition. Modify the code
 to create a widget when one does not exist in the main JupyterLab area
-or to refresh the image in the existing widget when the command runs again.
+or to refresh the image in the exist widget when the command runs again.
 The code for the ``activate`` function should read as follows after
 these changes:
 
@@ -747,12 +745,12 @@ image.
 
 If anything is not working correctly, compare your code with the
 `04-refactor-and-refresh
-tag <https://github.com/jupyterlab/jupyterlab_apod/tree/3.0-04-refactor-and-refresh>`__
+tag <https://github.com/jupyterlab/jupyterlab_apod/tree/2.0-04-refactor-and-refresh>`__
 to debug. Once it is working properly, commit it.
 
 .. code:: bash
 
-    git add package.json src/index.ts
+    git add .
     git commit -m 'Refactor, refresh image'
 
 Restore panel state when the browser refreshes
@@ -768,23 +766,23 @@ Update the imports at the top of your ``index.ts`` file so that the
 entire list of import statements looks like the following:
 
 .. code-block:: typescript
-    :emphasize-lines: 2,10
+    :emphasize-lines: 2,6
 
     import {
-      ILayoutRestorer,
-      JupyterFrontEnd,
-      JupyterFrontEndPlugin
+      ILayoutRestorer, JupyterFrontEnd, JupyterFrontEndPlugin
     } from '@jupyterlab/application';
 
     import {
-      ICommandPalette,
-      MainAreaWidget,
-      WidgetTracker
+      ICommandPalette, MainAreaWidget, WidgetTracker
     } from '@jupyterlab/apputils';
 
-    import { Message } from '@lumino/messaging';
+    import {
+      Message
+    } from '@lumino/messaging';
 
-    import { Widget } from '@lumino/widgets';
+    import {
+      Widget
+    } from '@lumino/widgets';
 
 Then add the ``ILayoutRestorer`` interface to the ``JupyterFrontEndPlugin``
 definition. This addition passes the global ``LayoutRestorer`` as the
@@ -821,9 +819,8 @@ Finally, rewrite the ``activate`` function so that it:
       app.commands.addCommand(command, {
         label: 'Random Astronomy Picture',
         execute: () => {
-          if (!widget || widget.isDisposed) {
+          if (!widget) {
             // Create a new widget if one does not exist
-            // or if the previous one was disposed after closing the panel
             const content = new APODWidget();
             widget = new MainAreaWidget({content});
             widget.id = 'apod-jupyterlab';
@@ -873,91 +870,84 @@ after the refresh.
    The completed extension, showing the `Astronomy Picture of the Day for 24 Jul 2015 <https://apod.nasa.gov/apod/ap150724.html>`__.
 
 Refer to the `05-restore-panel-state
-tag <https://github.com/jupyterlab/jupyterlab_apod/tree/3.0-05-restore-panel-state>`__
+tag <https://github.com/jupyterlab/jupyterlab_apod/tree/2.0-05-restore-panel-state>`__
 if your extension is not working correctly. Make a commit when the state of your
 extension persists properly.
 
 .. code:: bash
 
-    git add src/index.ts
+    git add .
     git commit -m 'Restore panel state'
 
 Congratulations! You've implemented all of the behaviors laid out at the start
-of this tutorial.
+of this tutorial. Now how about sharing it with the world?
 
-.. _packaging your extension:
+.. _publish-your-extension-to-npmjsorg:
 
-Packaging your extension
-~~~~~~~~~~~~~~~~~~~~~~~~
+Publish your extension to npmjs.org
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-JupyterLab extensions for JupyterLab 3.0 can be distributed as Python
-packages. The cookiecutter template we used contains all of the Python
-packaging instructions in the ``setup.py`` file to wrap your extension in a
-Python package. Before generating a package, we first need to install
-``jupyter_packaging``.
+npm is both a JavaScript package manager and the de facto registry for
+JavaScript software. You can `sign up for an account on the npmjs.com
+site <https://www.npmjs.com/signup>`__ or create an account from the
+command line by running ``npm adduser`` and entering values when
+prompted. Create an account now if you do not already have one. If you
+already have an account, login by running ``npm login`` and answering
+the prompts.
 
-.. code:: bash
-
-    pip install jupyter_packaging
-
-To create a Python source package (``.tar.gz``) in the ``dist/`` directory, do:
-
-.. code:: bash
-
-    python setup.py sdist
-
-To create a Python wheel package (``.whl``) in the ``dist/`` directory, do:
-
-.. code:: bash
-
-    python setup.py bdist_wheel
-
-Both of these commands will build the JavaScript into a bundle in the
-``jupyterlab_apod/static`` directory, which is then distributed with the
-Python package. This bundle will include any necessary JavaScript dependencies
-as well. You may want to check in the ``jupyterlab_apod/static`` directory to
-retain a record of what JavaScript is distributed in your package, or you may
-want to keep this "build artifact" out of your source repository history.
-
-You can now try installing your extension as a user would. Open a new terminal
-and run the following commands to create a new environment and install your
-extension.
+Next, open the project ``package.json`` file in your text editor. Prefix
+the ``name`` field value with ``@your-npm-username>/`` so that the
+entire field reads ``"name": "@your-npm-username/jupyterlab_apod"`` where
+you've replaced the string ``your-npm-username`` with your real
+username. Review the homepage, repository, license, and `other supported
+package.json <https://docs.npmjs.com/files/package.json>`__ fields while
+you have the file open. Then open the ``README.md`` file and adjust the
+command in the *Installation* section so that it includes the full,
+username-prefixed package name you just included in the ``package.json``
+file. For example:
 
 .. code:: bash
 
-    conda create -n jupyterlab-apod jupyterlab
+    jupyter labextension install @your-npm-username/jupyterlab_apod
+
+Return to your terminal window and make one more git commit:
+
+.. code:: bash
+
+    git add .
+    git commit -m 'Prepare to publish package'
+
+Now run the following command to publish your package:
+
+.. code:: bash
+
+    npm publish --access=public
+
+Check that your package appears on the npm website. You can either
+search for it from the homepage or visit
+``https://www.npmjs.com/package/@your-username/jupyterlab_apod``
+directly. If it doesn't appear, make sure you've updated the package
+name properly in the ``package.json`` and run the npm command correctly.
+Compare your work with the state of the reference project at the
+`06-prepare-to-publish
+tag <https://github.com/jupyterlab/jupyterlab_apod/tree/2.0-06-prepare-to-publish>`__
+for further debugging.
+
+You can now try installing your extension as a user would. Open a new
+terminal and run the following commands, again substituting your npm
+username where appropriate
+(make sure to stop the existing ``jupyter lab --watch`` command first):
+
+.. code:: bash
+
+    conda create -n jupyterlab-apod jupyterlab nodejs
     conda activate jupyterlab-apod
-    pip install jupyterlab_apod/dist/jupyterlab_apod-0.1.0-py3-none-any.whl
+    jupyter labextension install @your-npm-username/jupyterlab_apod
     jupyter lab
 
 You should see a fresh JupyterLab browser tab appear. When it does,
-execute the *Random Astronomy Picture* command to check that your extension
-works.
-
-Publishing your extension
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-You can publish your Python package to the `PyPI <https://pypi.org>`_ or
-`conda-forge <https://conda-forge.org>`_ repositories so users can easily
-install the extension using ``pip`` or ``conda``.
-
-You may want to also publish your extension as a JavaScript package to the
-`npm <https://www.npmjs.com>`_ package repository for several reasons:
-
-1. Distributing an extension as an npm package allows users to compile the
-   extension into JupyterLab explicitly (similar to how was done in JupyterLab
-   versions 1 and 2), which leads to a more optimal JupyterLab package.
-
-2. As we saw above, JupyterLab enables extensions to use objects provided by
-   other extensions. If you want to provide an object to the JupyterLab system
-   for other extensions to use, you will need to publish your JavaScript
-   package to npm so other extensions can depend on it and import and require
-   your token. For example, our extension above uses the ``ICommandPalette``
-   and ``ILayoutRestorer`` objects provided by some core extensions in
-   JupyterLab. We were able to tell JupyterLab we required these objects by
-   importing their tokens from the ``@jupyterlab/apputils`` and
-   ``@jupyterlab/application`` npm packages and listing them in our plugin
-   definition.
+execute the *Random Astronomy Picture* command to prove that your extension
+works when installed from npm.
 
 Learn more
 ~~~~~~~~~~

@@ -7,8 +7,8 @@ import { log } from './log';
 
 export async function main() {
   // Start a python kernel
-  const kernelManager = new KernelManager();
-  const kernel = await kernelManager.startNew({ name: 'python' });
+  let kernelManager = new KernelManager();
+  let kernel = await kernelManager.startNew({ name: 'python' });
 
   // Register a callback for when the kernel changes state.
   kernel.statusChanged.connect((_, status) => {
@@ -16,7 +16,7 @@ export async function main() {
   });
 
   log('Executing code');
-  const future = kernel.requestExecute({ code: 'a = 1' });
+  let future = kernel.requestExecute({ code: 'a = 1' });
   // Handle iopub messages
   future.onIOPub = msg => {
     if (msg.header.msg_type !== 'status') {
@@ -27,12 +27,12 @@ export async function main() {
   log('Execution is done');
 
   log('Send an inspect message');
-  const request: KernelMessage.IInspectRequestMsg['content'] = {
+  let request: KernelMessage.IInspectRequestMsg['content'] = {
     code: 'hello',
     cursor_pos: 4,
     detail_level: 0
   };
-  const inspectReply = await kernel.requestInspect(request);
+  let inspectReply = await kernel.requestInspect(request);
   log('Looking at reply');
   if (inspectReply.content.status === 'ok') {
     log('Inspect reply:');
@@ -43,7 +43,7 @@ export async function main() {
   await kernel.interrupt();
 
   log('Send an completion message');
-  const reply = await kernel.requestComplete({ code: 'impor', cursor_pos: 4 });
+  let reply = await kernel.requestComplete({ code: 'impor', cursor_pos: 4 });
   if (reply.content.status === 'ok') {
     log(reply.content.matches);
   }
@@ -55,7 +55,7 @@ export async function main() {
   await kernel.shutdown();
 
   log('Finding all existing kernels');
-  const kernelModels = await KernelAPI.listRunning();
+  let kernelModels = await KernelAPI.listRunning();
   log(kernelModels);
   if (kernelModels.length > 0) {
     log(`Connecting to ${kernelModels[0].name}`);

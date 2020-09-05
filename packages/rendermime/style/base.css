@@ -22,6 +22,7 @@
   border: none;
   margin: 0px;
   padding: 0px;
+  line-height: normal;
 }
 
 .jp-RenderedText pre a:link {
@@ -38,10 +39,6 @@
 }
 
 /* console foregrounds and backgrounds */
-.jp-RenderedText pre span {
-  display: inline-block;
-}
-
 .jp-RenderedText pre .ansi-black-fg {
   color: #3e424d;
 }

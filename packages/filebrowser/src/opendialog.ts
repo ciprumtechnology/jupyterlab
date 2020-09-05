@@ -12,7 +12,6 @@ import { Contents } from '@jupyterlab/services';
 import { FileBrowser } from './browser';
 import { FilterFileBrowserModel } from './model';
 import { IFileBrowserFactory } from './tokens';
-import { nullTranslator, ITranslator } from '@jupyterlab/translation';
 
 /**
  * The class name added to open file dialog
@@ -40,11 +39,6 @@ export namespace FileDialog {
      * Document manager
      */
     manager: IDocumentManager;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**
@@ -55,11 +49,6 @@ export namespace FileDialog {
      * Filter function on file browser item model
      */
     filter?: (value: Contents.IModel) => boolean;
-
-    /**
-     * The application language translator.
-     */
-    translator?: ITranslator;
   }
 
   /**
@@ -75,22 +64,20 @@ export namespace FileDialog {
   export function getOpenFiles(
     options: IFileOptions
   ): Promise<Dialog.IResult<Contents.IModel[]>> {
-    const translator = options.translator || nullTranslator;
-    const trans = translator.load('jupyterlab');
-    const dialogOptions: Partial<Dialog.IOptions<Contents.IModel[]>> = {
+    let dialogOptions: Partial<Dialog.IOptions<Contents.IModel[]>> = {
       title: options.title,
       buttons: [
-        Dialog.cancelButton({ label: trans.__('Cancel') }),
+        Dialog.cancelButton(),
         Dialog.okButton({
-          label: trans.__('Select')
+          label: 'Select'
         })
       ],
       focusNodeSelector: options.focusNodeSelector,
       host: options.host,
       renderer: options.renderer,
-      body: new OpenDialog(options.manager, options.filter, translator)
+      body: new OpenDialog(options.manager, options.filter)
     };
-    const dialog = new Dialog(dialogOptions);
+    let dialog = new Dialog(dialogOptions);
     return dialog.launch();
   }
 
@@ -117,28 +104,23 @@ export namespace FileDialog {
 /**
  * Open dialog widget
  */
-class OpenDialog
-  extends Widget
+class OpenDialog extends Widget
   implements Dialog.IBodyWidget<Contents.IModel[]> {
   constructor(
     manager: IDocumentManager,
-    filter?: (value: Contents.IModel) => boolean,
-    translator?: ITranslator
+    filter?: (value: Contents.IModel) => boolean
   ) {
     super();
-    translator = translator || nullTranslator;
     this.addClass(OPEN_DIALOG_CLASS);
 
     this._browser = Private.createFilteredFileBrowser(
       'filtered-file-browser-dialog',
       manager,
-      filter,
-      {},
-      translator
+      filter
     );
 
     // Build the sub widgets
-    const layout = new PanelLayout();
+    let layout = new PanelLayout();
     layout.addWidget(this._browser);
 
     // Set Widget content
@@ -200,21 +182,17 @@ namespace Private {
     id: string,
     manager: IDocumentManager,
     filter?: (value: Contents.IModel) => boolean,
-    options: IFileBrowserFactory.IOptions = {},
-    translator?: ITranslator
+    options: IFileBrowserFactory.IOptions = {}
   ) => {
-    translator = translator || nullTranslator;
     const model = new FilterFileBrowserModel({
       manager,
       filter,
-      translator,
       driveName: options.driveName,
       refreshInterval: options.refreshInterval
     });
     const widget = new FileBrowser({
       id,
-      model,
-      translator
+      model
     });
 
     return widget;

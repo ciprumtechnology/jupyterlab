@@ -108,8 +108,7 @@ class LogConsoleModelContentFactory extends OutputAreaModel.ContentFactory {
  * Output Area Model implementation which is able to
  * limit number of outputs stored.
  */
-export class LoggerOutputAreaModel
-  extends OutputAreaModel
+export class LoggerOutputAreaModel extends OutputAreaModel
   implements ILoggerOutputAreaModel {
   constructor({ maxLength, ...options }: LoggerOutputAreaModel.IOptions) {
     super(options);
@@ -144,8 +143,8 @@ export class LoggerOutputAreaModel
   }): boolean {
     const { value, lastModel } = options;
 
-    const oldSeconds = Math.trunc(lastModel.timestamp.getTime() / 1000);
-    const newSeconds = Math.trunc(value.timestamp / 1000);
+    let oldSeconds = Math.trunc(lastModel.timestamp.getTime() / 1000);
+    let newSeconds = Math.trunc(value.timestamp / 1000);
 
     return oldSeconds === newSeconds;
   }
@@ -227,7 +226,7 @@ export class Logger implements ILogger {
     return this._level;
   }
   set level(newValue: LogLevel) {
-    const oldValue = this._level;
+    let oldValue = this._level;
     if (oldValue === newValue) {
       return;
     }
@@ -273,8 +272,8 @@ export class Logger implements ILogger {
   }
   set rendermime(value: IRenderMimeRegistry | null) {
     if (value !== this._rendermime) {
-      const oldValue = this._rendermime;
-      const newValue = (this._rendermime = value);
+      let oldValue = this._rendermime;
+      let newValue = (this._rendermime = value);
       this._stateChanged.emit({ name: 'rendermime', oldValue, newValue });
     }
   }

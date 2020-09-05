@@ -10,7 +10,7 @@ import sys
 
 # Our own imports
 from setupbase import (
-    create_cmdclass, find_packages, get_version,
+    create_cmdclass, ensure_python, find_packages, get_version,
     command_for_func, combine_commands, install_npm, HERE, run,
     skip_npm, which, log
 )
@@ -18,33 +18,21 @@ from setupbase import (
 from setuptools import setup
 from setuptools.command.develop import develop
 
-min_version = (3, 6)
-
-if sys.version_info < min_version:
-    error = """
-Python {0} or above is required, you are using Python {1}.
-
-This may be due to an out of date pip.
-
-Make sure you have pip >= 9.0.1.
-""".format('.'.join(str(n) for n in min_version),
-           '.'.join(str(n) for n in sys.version_info[:3]))
-    sys.exit(error)
-
 
 NAME = 'jupyterlab'
-DESCRIPTION = 'The JupyterLab server extension.'
+DESCRIPTION = 'The JupyterLab notebook server extension.'
 
 with open(pjoin(HERE, 'README.md')) as fid:
     LONG_DESCRIPTION = fid.read()
 
+ensure_python(['>=3.5'])
 
 data_files_spec = [
     ('share/jupyter/lab/static', '%s/static' % NAME, '**'),
     ('share/jupyter/lab/schemas', '%s/schemas' % NAME, '**'),
     ('share/jupyter/lab/themes', '%s/themes' % NAME, '**'),
-    ('etc/jupyter/jupyter_server_config.d',
-     'jupyter-config/jupyter_server_config.d', 'jupyterlab.json'),
+    ('etc/jupyter/jupyter_notebook_config.d',
+     'jupyter-config/jupyter_notebook_config.d', 'jupyterlab.json'),
 ]
 
 package_data_spec = dict()
@@ -141,39 +129,31 @@ setup_args = dict(
         'License :: OSI Approved :: BSD License',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
     ],
 )
 
 
 setup_args['install_requires'] = [
-    'ipython',
+    'notebook>=4.3.1',
     'tornado!=6.0.0, !=6.0.1, !=6.0.2',
-    'jupyterlab_server~=2.0.0b7',
-    'jupyter_server~=1.0.0rc13',
-    'nbclassic~=0.2.0rc4',
+    'jupyterlab_server>=1.1.0',
     'jinja2>=2.10'
 ]
 
-
 setup_args['extras_require'] = {
     'test': [
-        'pytest==5.3.2',
-        'pytest-cov',
-        'pytest-tornasync',
-        'pytest-console-scripts',
+        'pytest',
         'pytest-check-links',
         'requests',
         'wheel',
         'virtualenv'
     ],
-    'test:sys_platform == "win32"': ['nose-exclude'],
     'docs': [
-        'jsx-lexer',
-        'recommonmark',
         'sphinx',
+        'recommonmark',
         'sphinx_rtd_theme',
         'sphinx-copybutton'
     ],
@@ -182,7 +162,7 @@ setup_args['extras_require'] = {
 
 setup_args['package_data'] = package_data_spec
 setup_args['include_package_data'] = True
-setup_args['python_requires'] = '>=3.6'
+setup_args['python_requires'] = '>=3.5'
 
 # Force entrypoints with setuptools (needed for Windows, unconditional
 # because of wheels)
@@ -190,12 +170,8 @@ setup_args['entry_points'] = {
     'console_scripts': [
         'jupyter-lab = jupyterlab.labapp:main',
         'jupyter-labextension = jupyterlab.labextensions:main',
-        'jupyter-labhub = jupyterlab.labhubapp:main',
         'jlpm = jupyterlab.jlpmapp:main',
-    ],
-    'pytest11': [
-        'pytest_jupyterlab = jupyterlab.pytest_plugin'
-    ],
+    ]
 }
 
 

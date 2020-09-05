@@ -1,4 +1,4 @@
-/* -----------------------------------------------------------------------------
+/*-----------------------------------------------------------------------------
 | Copyright (c) Jupyter Development Team.
 | Distributed under the terms of the Modified BSD License.
 |----------------------------------------------------------------------------*/
@@ -56,16 +56,16 @@ const ICON_CSS_CLASSES_TEMPLATE = `
 export async function ensurePackage(
   options: IEnsurePackageOptions
 ): Promise<string[]> {
-  const { data, pkgPath } = options;
-  const deps: { [key: string]: string } = data.dependencies || {};
-  const devDeps: { [key: string]: string } = data.devDependencies || {};
-  const seenDeps = options.depCache || {};
-  const missing = options.missing || [];
-  const unused = options.unused || [];
-  const messages: string[] = [];
-  const locals = options.locals || {};
-  const cssImports = options.cssImports || [];
-  const differentVersions = options.differentVersions || [];
+  let { data, pkgPath } = options;
+  let deps: { [key: string]: string } = data.dependencies || {};
+  let devDeps: { [key: string]: string } = data.devDependencies || {};
+  let seenDeps = options.depCache || {};
+  let missing = options.missing || [];
+  let unused = options.unused || [];
+  let messages: string[] = [];
+  let locals = options.locals || {};
+  let cssImports = options.cssImports || [];
+  let differentVersions = options.differentVersions || [];
 
   // Verify dependencies are consistent.
   let promises = Object.keys(deps).map(async name => {
@@ -106,9 +106,7 @@ export async function ensurePackage(
   filenames = glob.sync(path.join(pkgPath, 'src/*.ts*'));
   filenames = filenames.concat(glob.sync(path.join(pkgPath, 'src/**/*.ts*')));
 
-  const tsConfigPath = path.join(pkgPath, 'tsconfig.json');
-
-  if (!fs.existsSync(tsConfigPath)) {
+  if (!fs.existsSync(path.join(pkgPath, 'tsconfig.json'))) {
     if (utils.writePackageData(path.join(pkgPath, 'package.json'), data)) {
       messages.push('Updated package.json');
     }
@@ -117,7 +115,7 @@ export async function ensurePackage(
 
   // Make sure typedoc config files are consistent
   if (fs.existsSync(path.join(pkgPath, 'typedoc.json'))) {
-    const name = data.name.split('/');
+    let name = data.name.split('/');
     utils.writeJSONFile(path.join(pkgPath, 'typedoc.json'), {
       excludeNotExported: true,
       mode: 'file',
@@ -130,20 +128,17 @@ export async function ensurePackage(
 
   // Extract all of the imports from the TypeScript files.
   filenames.forEach(fileName => {
-    const sourceFile = ts.createSourceFile(
+    let sourceFile = ts.createSourceFile(
       fileName,
       fs.readFileSync(fileName).toString(),
       (ts.ScriptTarget as any).ES6,
-      /* setParentNodes */ true
+      /*setParentNodes */ true
     );
     imports = imports.concat(getImports(sourceFile));
   });
 
   // Make sure we are not importing CSS in a core package.
-  if (
-    data.name.indexOf('example') === -1 &&
-    data.name !== '@jupyterlab/codemirror'
-  ) {
+  if (data.name.indexOf('example') === -1) {
     imports.forEach(importStr => {
       if (importStr.indexOf('.css') !== -1) {
         messages.push('CSS imports are not allowed source files');
@@ -152,13 +147,10 @@ export async function ensurePackage(
   }
 
   let names: string[] = Array.from(new Set(imports)).sort();
-  names = names.map(function (name) {
-    const parts = name.split('/');
+  names = names.map(function(name) {
+    let parts = name.split('/');
     if (name.indexOf('@') === 0) {
       return parts[0] + '/' + parts[1];
-    }
-    if (parts[0].indexOf('!') !== -1) {
-      parts[0] = parts[0].slice(parts[0].lastIndexOf('!') + 1);
     }
     return parts[0];
   });
@@ -219,7 +211,7 @@ export async function ensurePackage(
       }
     }
     if (names.indexOf(name) === -1) {
-      const version = data.dependencies[name];
+      let version = data.dependencies[name];
       messages.push(
         `Unused dependency: ${name}@${version}: remove or add to list of known unused dependencies for this package`
       );
@@ -236,7 +228,7 @@ export async function ensurePackage(
   }
 
   // Handle references.
-  const references: { [key: string]: string } = Object.create(null);
+  let references: { [key: string]: string } = Object.create(null);
   Object.keys(deps).forEach(name => {
     if (!(name in locals)) {
       return;
@@ -245,67 +237,20 @@ export async function ensurePackage(
     if (!fs.existsSync(path.join(target, 'tsconfig.json'))) {
       return;
     }
-    const ref = path.relative(pkgPath, locals[name]);
+    let ref = path.relative(pkgPath, locals[name]);
     references[name] = ref.split(path.sep).join('/');
   });
   if (
     data.name.indexOf('example-') === -1 &&
     Object.keys(references).length > 0
   ) {
+    const tsConfigPath = path.join(pkgPath, 'tsconfig.json');
     const tsConfigData = utils.readJSONFile(tsConfigPath);
     tsConfigData.references = [];
     Object.keys(references).forEach(name => {
       tsConfigData.references.push({ path: references[name] });
     });
     utils.writeJSONFile(tsConfigPath, tsConfigData);
-  }
-
-  // Inherit from the base tsconfig.
-  if (fs.existsSync(tsConfigPath)) {
-    const tsConfigData = utils.readJSONFile(tsConfigPath);
-    tsConfigData.references = [];
-    Object.keys(references).forEach(name => {
-      tsConfigData.references.push({ path: references[name] });
-    });
-    let prefix = '';
-    let dirName = pkgPath;
-    while (!fs.existsSync(path.join(dirName, 'tsconfigbase.json'))) {
-      dirName = path.dirname(dirName);
-      prefix += '../';
-    }
-    tsConfigData.extends = path.join(prefix, 'tsconfigbase');
-    utils.writeJSONFile(tsConfigPath, tsConfigData);
-  }
-
-  // Handle references in tsconfig.test.json if it exists
-  const tsConfigTestPath = path.join(pkgPath, 'tsconfig.test.json');
-  if (fs.existsSync(tsConfigTestPath)) {
-    const testReferences: { [key: string]: string } = { ...references };
-
-    // Add a reference to self to build the local package as well.
-    testReferences['.'] = '.';
-
-    Object.keys(devDeps).forEach(name => {
-      if (!(name in locals)) {
-        return;
-      }
-      const target = locals[name];
-      if (!fs.existsSync(path.join(target, 'tsconfig.json'))) {
-        return;
-      }
-      const ref = path.relative(pkgPath, locals[name]);
-      testReferences[name] = ref.split(path.sep).join('/');
-    });
-
-    const tsConfigTestData = utils.readJSONFile(tsConfigTestPath);
-    tsConfigTestData.references = [];
-    Object.keys(testReferences).forEach(name => {
-      tsConfigTestData.references.push({ path: testReferences[name] });
-    });
-    Object.keys(references).forEach(name => {
-      tsConfigTestData.references.push({ path: testReferences[name] });
-    });
-    utils.writeJSONFile(tsConfigTestPath, tsConfigTestData);
   }
 
   // Get a list of all the published files.
@@ -330,7 +275,7 @@ export async function ensurePackage(
   } else if (!schemaDir && schemas.length) {
     messages.push(`Schemas found, but no schema indicated in ${pkgPath}`);
   }
-  for (const schema of schemas) {
+  for (let schema of schemas) {
     if (!published.has(schema)) {
       messages.push(`Schema ${schema} not published in ${pkgPath}`);
     }
@@ -338,7 +283,7 @@ export async function ensurePackage(
 
   // Ensure that the `style` directories match what is in the `package.json`
   const styles = glob.sync(path.join(pkgPath, 'style', '**/*.*'));
-  for (const style of styles) {
+  for (let style of styles) {
     if (!published.has(style)) {
       messages.push(`Style file ${style} not published in ${pkgPath}`);
     }
@@ -411,7 +356,7 @@ export async function ensureUiComponents(
 ): Promise<string[]> {
   const funcName = 'ensureUiComponents';
   const pkgName = utils.stem(pkgPath);
-  const messages: string[] = [];
+  let messages: string[] = [];
 
   const svgPaths = glob.sync(path.join(pkgPath, 'style/icons', '**/*.svg'));
 
@@ -419,8 +364,8 @@ export async function ensureUiComponents(
   const iconSrcDir = path.join(pkgPath, 'src/icon');
 
   // build the per-icon import code
-  const _svgImportStatements: string[] = [];
-  const _labiconConstructions: string[] = [];
+  let _svgImportStatements: string[] = [];
+  let _labiconConstructions: string[] = [];
   svgPaths.forEach(svgPath => {
     const svgName = utils.stem(svgPath);
     const svgImportPath = path
@@ -463,8 +408,8 @@ export async function ensureUiComponents(
   const iconCSSDir = path.join(pkgPath, 'style');
 
   // build the per-icon import code
-  const _iconCSSUrls: string[] = [];
-  const _iconCSSDeclarations: string[] = [];
+  let _iconCSSUrls: string[] = [];
+  let _iconCSSDeclarations: string[] = [];
   svgPaths.forEach(svgPath => {
     const svgName = utils.stem(svgPath);
     const urlName = 'jp-icon-' + svgName;
@@ -567,7 +512,7 @@ function ensureFile(
   contents: string,
   prettify: boolean = true
 ): string[] {
-  const messages: string[] = [];
+  let messages: string[] = [];
 
   if (!fs.existsSync(fpath)) {
     // bail
@@ -606,7 +551,7 @@ function ensureFile(
  * @returns An array of package names.
  */
 function getImports(sourceFile: ts.SourceFile): string[] {
-  const imports: string[] = [];
+  let imports: string[] = [];
   handleNode(sourceFile);
 
   function handleNode(node: any): void {
