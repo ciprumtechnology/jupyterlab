@@ -1,7 +1,7 @@
 MANIFEST
 build
 dist
-lib
+# lib
 
 jupyterlab/imports.css
 jupyterlab/static
