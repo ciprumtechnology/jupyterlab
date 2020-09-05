@@ -36,7 +36,7 @@ tests/**/coverage
 tests/**/.cache-loader
 
 # javascript/typescript
-# lib
+lib
 node_modules
 
 *.tsbuildinfo
